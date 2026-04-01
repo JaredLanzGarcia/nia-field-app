@@ -3,7 +3,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
 import 'package:native_device_orientation/native_device_orientation.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class FullImageViewer extends StatefulWidget {
   // Can be a File (local) or String (network URL)
@@ -73,7 +76,16 @@ class _FullImageViewerState extends State<FullImageViewer> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () => saveToGallery(widget.imagePath.path as String),
+            onPressed: () {
+              widget.imagePath.toString().startsWith("http")
+                  ? print("Starts ${widget.imagePath as String}")
+                  : print("Without ${widget.imagePath.path as String}");
+              saveToGallery(
+                widget.imagePath.toString().startsWith("http")
+                    ? widget.imagePath as String
+                    : widget.imagePath.path as String,
+              );
+            },
             icon: Icon(Icons.save),
           ),
         ],
@@ -95,9 +107,37 @@ class _FullImageViewerState extends State<FullImageViewer> {
     bool hasAccess = await Gal.hasAccess();
     if (!hasAccess) await Gal.requestAccess();
 
-    // Save the image to the actual phone gallery
-    await Gal.putImage(path);
-    print("Saved to Gallery!");
+    if (path.startsWith("http")) {
+      String fixedUrl = path.replaceAll('\\', '/');
+      String fileName = p.basename(fixedUrl);
+      // 1. Get temporary directory
+      Directory directory = await getApplicationDocumentsDirectory();
+      String localPath = p.join(directory.path, fileName);
+
+      // 2. Download the bytes
+      final response = await http.get(Uri.parse(fixedUrl));
+
+      if (response.statusCode == 200) {
+        // 3. Write to a local file
+        File file = File(localPath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        // 4. Save to Gallery using the LOCAL path
+        await Gal.putImage(file.path);
+        print("Saved successfully!");
+      } else {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text("Failed to download image"),
+          ),
+        );
+        throw Exception("Failed to download image");
+      }
+    } else {
+      await Gal.putImage(path);
+    }
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

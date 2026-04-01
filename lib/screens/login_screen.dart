@@ -1,33 +1,72 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
+import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/main_screen.dart';
 
-class LoginScreen extends StatelessWidget {
-  final Function(String) onLoginSuccess;
+class LoginScreen extends StatefulWidget {
+  final Function(String, List<dynamic>) onLoginSuccess;
   LoginScreen({super.key, required this.onLoginSuccess});
 
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _empIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final database = AppDatabase();
+  final api_url = "http://192.168.1.70:8000";
+  bool isObscured = true;
+  String? errorMessage;
 
   void doLogin() async {
-    String? token = await callLoginApi(
+    setState(() {
+      errorMessage = null;
+    });
+
+    final result = await callLoginApi(
       _empIdController.text,
       _passwordController.text,
     );
 
-    if (token != null) {
-      onLoginSuccess(token);
+    if (result != null) {
+      final response = await http.get(
+        Uri.parse('${api_url}/me'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${result['access_token']}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final int empId = data['employee_id'];
+        await database.delete(database.users).go();
+
+        await database
+            .into(database.users)
+            .insert(
+              UsersCompanion.insert(
+                employeeId: empId.toString(),
+                password: _passwordController.text,
+              ),
+            );
+        widget.onLoginSuccess(result['access_token'], result['history']);
+      }
     }
   }
 
-  Future<String?> callLoginApi(String empId, String password) async {
+  Future<Map<String, dynamic>?> callLoginApi(
+    String empId,
+    String password,
+  ) async {
     try {
       // 1. Point to your Python server (Use your computer's local IP if testing)
-      final url = Uri.parse('http://192.168.1.32:8000/login');
+      final url = Uri.parse('${api_url}/login');
 
       // 2. Send the POST request
       final response = await http.post(
@@ -40,7 +79,10 @@ class LoginScreen extends StatelessWidget {
         final data = jsonDecode(response.body);
 
         // If Python returns {"access_token": "..."}
-        return data['access_token'];
+        setState(() {
+          errorMessage = data['error'];
+        });
+        return data;
       } else {
         print("Login failed: ${response.body}");
         return null;
@@ -79,12 +121,30 @@ class LoginScreen extends StatelessWidget {
                           width: 250,
                         ),
                       ),
+
+                      if (errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10, bottom: 30),
+                          child: Center(
+                            child: Text(
+                              errorMessage!,
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
                       TextFormField(
                         controller: _empIdController,
                         decoration: inputDecor("Employee ID No."),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password must be at least 6 characters';
+                          if (value == null ||
+                              value.isEmpty ||
+                              value.length != 6) {
+                            return 'Password must be 6 characters';
                           }
                           if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
                             return 'ID must contain only numbers';
@@ -94,6 +154,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       Gap(16),
                       TextFormField(
+                        obscureText: isObscured,
                         controller: _passwordController,
                         decoration: inputDecor("Password", isPassword: true),
                         validator: (value) {
@@ -147,7 +208,20 @@ class LoginScreen extends StatelessWidget {
         ),
       ),
       hintFadeDuration: Duration(seconds: 3),
-      suffixIcon: isPassword ? Icon(Icons.remove_red_eye) : null,
+      suffixIcon:
+          isPassword
+              ? TextButton(
+                onPressed: () {
+                  setState(() {
+                    isObscured = !isObscured;
+                  });
+                },
+                child:
+                    isObscured
+                        ? Text("Show", style: TextStyle(color: Colors.green))
+                        : Text("Hide", style: TextStyle(color: Colors.green)),
+              )
+              : null,
       suffixIconColor: Colors.green.shade200,
       filled: true,
       fillColor: Colors.white,
@@ -164,7 +238,7 @@ class LoginScreen extends StatelessWidget {
       ),
       // You can also style the border when in an error state
       errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent.shade100, width: 1.0),
+        borderSide: BorderSide(color: Colors.redAccent.shade200, width: 1.0),
       ),
     );
   }

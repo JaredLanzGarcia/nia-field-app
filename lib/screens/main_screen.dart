@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -15,6 +16,9 @@ import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/full_image_viewer.dart';
 import 'package:nia_project/screens/map_screen.dart';
+import 'package:nia_project/time_persistence_service.dart';
+import 'package:nia_project/time_security_service.dart';
+import 'package:ntp/ntp.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:workmanager/workmanager.dart';
@@ -28,14 +32,36 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  File? _image;
-  String _metadata = "No data captured yet";
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   // To store the captured photo
   final ImagePicker _picker = ImagePicker();
   final database = AppDatabase();
   geocode.Placemark? place;
   WebSettings wsetting = WebSettings();
+  final api_url = "http://192.168.1.70:8000";
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // checkConsistency();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    // TODO: implement didChangeAppLifecycleState
+    if (state == AppLifecycleState.resumed) {
+      await TimeSecurityService.performSecureSave();
+    }
+  }
 
   void scheduleSync() {
     Workmanager().registerOneOffTask(
@@ -48,35 +74,39 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Future<void> reconcileDatabase() async {
+  Future<void> reconcileDatabase(String currentEmployeeId) async {
     try {
-      // 1. Get the list of IDs actually in MySQL
-      final response = await http.get(
-        Uri.parse('http://192.168.1.32:8000/verify-ids'),
-      );
+      final response = await http.get(Uri.parse('${api_url}/verify-sync'));
       if (response.statusCode != 200) return;
 
-      final List<int> serverIds = List<int>.from(
-        jsonDecode(response.body)['synced_ids'],
+      final List<String> serverKeys = List<String>.from(
+        jsonDecode(response.body)['synced_keys'],
       );
 
-      // 2. Fetch all local records that THINK they are synced
+      final DateFormat syncFormatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+
       final localSyncedRecords =
           await (database.select(database.capturedImages)
             ..where((t) => t.isSynced.equals(true))).get();
 
       for (var record in localSyncedRecords) {
-        // 3. If the server doesn't have it, mark it as NOT synced
-        if (!serverIds.contains(record.id)) {
+        String formattedDate = syncFormatter.format(record.deviceTimestamp);
+
+        // Build the matching key: "EMP123_2026-02-25T09:47:00"
+        // Note: Ensure the timestamp format matches your Python isoformat()
+        String localKey = "${currentEmployeeId}_${formattedDate}";
+
+        if (!serverKeys.contains(localKey)) {
           await (database.update(database.capturedImages)..where(
             (t) => t.id.equals(record.id),
-          )).write(CapturedImagesCompanion(isSynced: Value(false)));
+          )).write(const CapturedImagesCompanion(isSynced: Value(false)));
 
-          print("Record ${record.id} was out of sync. Resetting to false.");
+          print(
+            "Record ${record.id} missing on server. Resetting isSynced to false.",
+          );
         }
       }
 
-      // 4. Trigger sync to fix the missing items
       scheduleSync();
     } catch (e) {
       print("Reconciliation failed: $e");
@@ -90,28 +120,45 @@ class _MainScreenState extends State<MainScreen> {
     final permanentFile = await File(
       photo.path,
     ).copy('${appDir.path}/$fileName');
-    String shortPlace =
-        place == null
-            ? "No place found"
-            : "name: ${place!.name}\nstreet: ${place!.street}\nlocality: ${place!.locality}\nSAA: ${place!.subAdministrativeArea}\npcode: ${place!.postalCode}";
+    final currentUser = await database.select(database.users).getSingleOrNull();
 
-    // 2. Insert into Drift
-    await database
-        .into(database.capturedImages)
-        .insert(
-          CapturedImagesCompanion.insert(
-            imagePath: permanentFile.path,
-            deviceTimestamp: DateTime.now(),
-            geoTimestamp: pos.timestamp.toLocal(),
-            timeOffset: DateTime.now().difference(pos.timestamp.toLocal()),
-            latitude: pos.latitude,
-            longitude: pos.longitude,
-            place: shortPlace,
-          ),
-        );
-    setState(() {
-      scheduleSync();
-    });
+    // 1. Get the time the user is CLAIMING it is right now
+    DateTime deviceNow = DateTime.now();
+
+    // 2. Get the last time we recorded them being active
+    DateTime lastActivity = await TimePersistenceService.getLastRecordedTime();
+
+    print(deviceNow);
+    print(lastActivity);
+
+    if (currentUser != null) {
+      final String empId = currentUser.employeeId;
+
+      String shortPlace =
+          place == null
+              ? "No place found"
+              : "name: ${place!.name}\nstreet: ${place!.street}\nlocality: ${place!.locality}\nSAA: ${place!.subAdministrativeArea}\npcode: ${place!.postalCode}";
+      //change the "deviceTimestamp" and "geoTimestamp" values into deviceNow and lastActivity
+      // 2. Insert into Drift
+      await database
+          .into(database.capturedImages)
+          .insertOnConflictUpdate(
+            CapturedImagesCompanion.insert(
+              imagePath: permanentFile.path,
+              deviceTimestamp: deviceNow,
+              lastActivity: lastActivity,
+              timeOffset: deviceNow.difference(lastActivity),
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+              place: shortPlace,
+              employeeId: empId,
+            ),
+          );
+      setState(() {
+        scheduleSync();
+      });
+    }
+
     print("Saved successfully!");
   }
 
@@ -124,28 +171,14 @@ class _MainScreenState extends State<MainScreen> {
     // This line opens the camera directly
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
 
-    if (photo != null) {
-      String timestamp = DateFormat(
-        'yyyy-MM-dd HH:mm:ss',
-      ).format(DateTime.now());
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      setState(() {
-        _image = File(photo.path);
-        _metadata =
-            "Time: $timestamp\nLat: ${position.latitude}, Long: ${position.longitude}";
-      });
+    if (photo != null) {
       await geoCode(position.latitude, position.longitude);
       // await saveToGallery(photo.path);
 
-      // print("Current time of the geolocator: ${position.timestamp}");
-      // print("Current time of the geolocator + 8 hours: ${position.timestamp.add(Duration(hours: 8))}",);
-      // print("Current local time of geolocator: ${position.timestamp.toLocal()}",);
-      // print("Current time of the device: ${DateTime.now()}");
-      // print("Difference of dt.now and geolocator: ${DateTime.now().difference(position.timestamp.toLocal())}",);
-      // print("Is equal? ${position.timestamp.add(Duration(hours: 8)) == DateTime.now()}",);
       await saveToDrift(photo, position);
     }
   }
@@ -168,8 +201,14 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           IconButton(
             onPressed: () async {
-              await reconcileDatabase();
-              setState(() {});
+              final currentUser =
+                  await database.select(database.users).getSingleOrNull();
+
+              if (currentUser != null) {
+                final String empId = currentUser.employeeId;
+
+                await reconcileDatabase(empId);
+              }
             },
             icon: Icon(Icons.refresh),
           ),
@@ -201,7 +240,7 @@ class _MainScreenState extends State<MainScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context, true);
-                            widget.authService.logout();
+                            widget.authService.logout(database);
                           },
                           child: const Text(
                             "Logout",
@@ -222,8 +261,9 @@ class _MainScreenState extends State<MainScreen> {
             child: StreamBuilder<List<CapturedImage>>(
               stream: database.select(database.capturedImages).watch(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
 
                 final rawImages = snapshot.data!;
 
@@ -269,32 +309,47 @@ class _MainScreenState extends State<MainScreen> {
                           return ListTile(
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
-                              child: Image.file(
-                                File(item.imagePath),
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ),
+                              child:
+                                  item.imagePath.startsWith("http")
+                                      ? CachedNetworkImage(
+                                        imageUrl: item.imagePath,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                        placeholder:
+                                            (context, url) => Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                        errorWidget:
+                                            (context, url, error) =>
+                                                Icon(Icons.error),
+                                      )
+                                      : Image.file(
+                                        File(item.imagePath),
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      ),
                             ),
                             title: Text(
                               "Time: ${DateFormat.jm().format(item.deviceTimestamp)}",
                             ), // e.g. 1:45 PM
-                            trailing: CircleAvatar(
-                              radius: 12,
-                              child: Text(
-                                "${item.id}",
-                                style: const TextStyle(fontSize: 10),
-                              ),
+                            trailing: Text(
+                              "${item.employeeId}",
+                              style: const TextStyle(fontSize: 10),
                             ),
                             onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => FullImageViewer(
-                                        imagePath: File(item.imagePath),
-                                      ),
-                                ),
-                              );
+                              viewActions(context, item);
+                              // Navigator.of(context).push(
+                              //   MaterialPageRoute(
+                              //     builder:
+                              //         (_) => FullImageViewer(
+                              //           imagePath: File(item.imagePath),
+                              //         ),
+                              //   ),
+                              // );
                             },
                           );
                         }).toList(),
@@ -319,6 +374,54 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<dynamic> viewActions(BuildContext context, CapturedImage item) {
+    return showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text("View Image"),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => FullImageViewer(
+                            imagePath:
+                                item.imagePath.startsWith("http")
+                                    ? item.imagePath
+                                    : File(item.imagePath),
+                          ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                title: Text("View Location"),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => MapScreen(
+                            item_lat: item.latitude,
+                            item_long: item.longitude,
+                            item_date: item.deviceTimestamp,
+                          ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -22,7 +22,7 @@ class RegisterScreen extends StatelessWidget {
   Future<String?> callLoginApi(String empId, String password) async {
     try {
       // 1. Point to your Python server (Use your computer's local IP if testing)
-      final url = Uri.parse('http://192.168.1.32:8000/register');
+      final url = Uri.parse('http://192.168.1.253:8000/register');
 
       // 2. Send the POST request
       final response = await http.post(
@@ -78,6 +78,7 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     Gap(16),
                     TextFormField(
+                      obscureText: true,
                       controller: _passwordController,
                       decoration: inputDecor("Password", isPassword: true),
                     ),

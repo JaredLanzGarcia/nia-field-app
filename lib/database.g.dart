@@ -3,6 +3,225 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
+class $UsersTable extends Users with TableInfo<$UsersTable, User> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _employeeIdMeta = const VerificationMeta(
+    'employeeId',
+  );
+  @override
+  late final GeneratedColumn<String> employeeId = GeneratedColumn<String>(
+    'employee_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _passwordMeta = const VerificationMeta(
+    'password',
+  );
+  @override
+  late final GeneratedColumn<String> password = GeneratedColumn<String>(
+    'password',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [employeeId, password];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'users';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<User> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('employee_id')) {
+      context.handle(
+        _employeeIdMeta,
+        employeeId.isAcceptableOrUnknown(data['employee_id']!, _employeeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_employeeIdMeta);
+    }
+    if (data.containsKey('password')) {
+      context.handle(
+        _passwordMeta,
+        password.isAcceptableOrUnknown(data['password']!, _passwordMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_passwordMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {employeeId};
+  @override
+  User map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return User(
+      employeeId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}employee_id'],
+          )!,
+      password:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}password'],
+          )!,
+    );
+  }
+
+  @override
+  $UsersTable createAlias(String alias) {
+    return $UsersTable(attachedDatabase, alias);
+  }
+}
+
+class User extends DataClass implements Insertable<User> {
+  final String employeeId;
+  final String password;
+  const User({required this.employeeId, required this.password});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['employee_id'] = Variable<String>(employeeId);
+    map['password'] = Variable<String>(password);
+    return map;
+  }
+
+  UsersCompanion toCompanion(bool nullToAbsent) {
+    return UsersCompanion(
+      employeeId: Value(employeeId),
+      password: Value(password),
+    );
+  }
+
+  factory User.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return User(
+      employeeId: serializer.fromJson<String>(json['employeeId']),
+      password: serializer.fromJson<String>(json['password']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'employeeId': serializer.toJson<String>(employeeId),
+      'password': serializer.toJson<String>(password),
+    };
+  }
+
+  User copyWith({String? employeeId, String? password}) => User(
+    employeeId: employeeId ?? this.employeeId,
+    password: password ?? this.password,
+  );
+  User copyWithCompanion(UsersCompanion data) {
+    return User(
+      employeeId:
+          data.employeeId.present ? data.employeeId.value : this.employeeId,
+      password: data.password.present ? data.password.value : this.password,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('User(')
+          ..write('employeeId: $employeeId, ')
+          ..write('password: $password')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(employeeId, password);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is User &&
+          other.employeeId == this.employeeId &&
+          other.password == this.password);
+}
+
+class UsersCompanion extends UpdateCompanion<User> {
+  final Value<String> employeeId;
+  final Value<String> password;
+  final Value<int> rowid;
+  const UsersCompanion({
+    this.employeeId = const Value.absent(),
+    this.password = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UsersCompanion.insert({
+    required String employeeId,
+    required String password,
+    this.rowid = const Value.absent(),
+  }) : employeeId = Value(employeeId),
+       password = Value(password);
+  static Insertable<User> custom({
+    Expression<String>? employeeId,
+    Expression<String>? password,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (employeeId != null) 'employee_id': employeeId,
+      if (password != null) 'password': password,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UsersCompanion copyWith({
+    Value<String>? employeeId,
+    Value<String>? password,
+    Value<int>? rowid,
+  }) {
+    return UsersCompanion(
+      employeeId: employeeId ?? this.employeeId,
+      password: password ?? this.password,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (employeeId.present) {
+      map['employee_id'] = Variable<String>(employeeId.value);
+    }
+    if (password.present) {
+      map['password'] = Variable<String>(password.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsersCompanion(')
+          ..write('employeeId: $employeeId, ')
+          ..write('password: $password, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CapturedImagesTable extends CapturedImages
     with TableInfo<$CapturedImagesTable, CapturedImage> {
   @override
@@ -45,12 +264,12 @@ class $CapturedImagesTable extends CapturedImages
         type: DriftSqlType.dateTime,
         requiredDuringInsert: true,
       );
-  static const VerificationMeta _geoTimestampMeta = const VerificationMeta(
-    'geoTimestamp',
+  static const VerificationMeta _lastActivityMeta = const VerificationMeta(
+    'lastActivity',
   );
   @override
-  late final GeneratedColumn<DateTime> geoTimestamp = GeneratedColumn<DateTime>(
-    'geo_timestamp',
+  late final GeneratedColumn<DateTime> lastActivity = GeneratedColumn<DateTime>(
+    'last_activity',
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
@@ -96,6 +315,20 @@ class $CapturedImagesTable extends CapturedImages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _employeeIdMeta = const VerificationMeta(
+    'employeeId',
+  );
+  @override
+  late final GeneratedColumn<String> employeeId = GeneratedColumn<String>(
+    'employee_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (employee_id)',
+    ),
+  );
   static const VerificationMeta _isSyncedMeta = const VerificationMeta(
     'isSynced',
   );
@@ -116,11 +349,12 @@ class $CapturedImagesTable extends CapturedImages
     id,
     imagePath,
     deviceTimestamp,
-    geoTimestamp,
+    lastActivity,
     timeOffset,
     latitude,
     longitude,
     place,
+    employeeId,
     isSynced,
   ];
   @override
@@ -157,16 +391,16 @@ class $CapturedImagesTable extends CapturedImages
     } else if (isInserting) {
       context.missing(_deviceTimestampMeta);
     }
-    if (data.containsKey('geo_timestamp')) {
+    if (data.containsKey('last_activity')) {
       context.handle(
-        _geoTimestampMeta,
-        geoTimestamp.isAcceptableOrUnknown(
-          data['geo_timestamp']!,
-          _geoTimestampMeta,
+        _lastActivityMeta,
+        lastActivity.isAcceptableOrUnknown(
+          data['last_activity']!,
+          _lastActivityMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_geoTimestampMeta);
+      context.missing(_lastActivityMeta);
     }
     if (data.containsKey('latitude')) {
       context.handle(
@@ -191,6 +425,14 @@ class $CapturedImagesTable extends CapturedImages
       );
     } else if (isInserting) {
       context.missing(_placeMeta);
+    }
+    if (data.containsKey('employee_id')) {
+      context.handle(
+        _employeeIdMeta,
+        employeeId.isAcceptableOrUnknown(data['employee_id']!, _employeeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_employeeIdMeta);
     }
     if (data.containsKey('is_synced')) {
       context.handle(
@@ -222,10 +464,10 @@ class $CapturedImagesTable extends CapturedImages
             DriftSqlType.dateTime,
             data['${effectivePrefix}device_timestamp'],
           )!,
-      geoTimestamp:
+      lastActivity:
           attachedDatabase.typeMapping.read(
             DriftSqlType.dateTime,
-            data['${effectivePrefix}geo_timestamp'],
+            data['${effectivePrefix}last_activity'],
           )!,
       timeOffset: $CapturedImagesTable.$convertertimeOffset.fromSql(
         attachedDatabase.typeMapping.read(
@@ -248,6 +490,11 @@ class $CapturedImagesTable extends CapturedImages
             DriftSqlType.string,
             data['${effectivePrefix}place'],
           )!,
+      employeeId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}employee_id'],
+          )!,
       isSynced:
           attachedDatabase.typeMapping.read(
             DriftSqlType.bool,
@@ -269,21 +516,23 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
   final int id;
   final String imagePath;
   final DateTime deviceTimestamp;
-  final DateTime geoTimestamp;
+  final DateTime lastActivity;
   final Duration timeOffset;
   final double latitude;
   final double longitude;
   final String place;
+  final String employeeId;
   final bool isSynced;
   const CapturedImage({
     required this.id,
     required this.imagePath,
     required this.deviceTimestamp,
-    required this.geoTimestamp,
+    required this.lastActivity,
     required this.timeOffset,
     required this.latitude,
     required this.longitude,
     required this.place,
+    required this.employeeId,
     required this.isSynced,
   });
   @override
@@ -292,7 +541,7 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     map['id'] = Variable<int>(id);
     map['image_path'] = Variable<String>(imagePath);
     map['device_timestamp'] = Variable<DateTime>(deviceTimestamp);
-    map['geo_timestamp'] = Variable<DateTime>(geoTimestamp);
+    map['last_activity'] = Variable<DateTime>(lastActivity);
     {
       map['time_offset'] = Variable<int>(
         $CapturedImagesTable.$convertertimeOffset.toSql(timeOffset),
@@ -301,6 +550,7 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     map['latitude'] = Variable<double>(latitude);
     map['longitude'] = Variable<double>(longitude);
     map['place'] = Variable<String>(place);
+    map['employee_id'] = Variable<String>(employeeId);
     map['is_synced'] = Variable<bool>(isSynced);
     return map;
   }
@@ -310,11 +560,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       id: Value(id),
       imagePath: Value(imagePath),
       deviceTimestamp: Value(deviceTimestamp),
-      geoTimestamp: Value(geoTimestamp),
+      lastActivity: Value(lastActivity),
       timeOffset: Value(timeOffset),
       latitude: Value(latitude),
       longitude: Value(longitude),
       place: Value(place),
+      employeeId: Value(employeeId),
       isSynced: Value(isSynced),
     );
   }
@@ -328,11 +579,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       id: serializer.fromJson<int>(json['id']),
       imagePath: serializer.fromJson<String>(json['imagePath']),
       deviceTimestamp: serializer.fromJson<DateTime>(json['deviceTimestamp']),
-      geoTimestamp: serializer.fromJson<DateTime>(json['geoTimestamp']),
+      lastActivity: serializer.fromJson<DateTime>(json['lastActivity']),
       timeOffset: serializer.fromJson<Duration>(json['timeOffset']),
       latitude: serializer.fromJson<double>(json['latitude']),
       longitude: serializer.fromJson<double>(json['longitude']),
       place: serializer.fromJson<String>(json['place']),
+      employeeId: serializer.fromJson<String>(json['employeeId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
     );
   }
@@ -343,11 +595,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       'id': serializer.toJson<int>(id),
       'imagePath': serializer.toJson<String>(imagePath),
       'deviceTimestamp': serializer.toJson<DateTime>(deviceTimestamp),
-      'geoTimestamp': serializer.toJson<DateTime>(geoTimestamp),
+      'lastActivity': serializer.toJson<DateTime>(lastActivity),
       'timeOffset': serializer.toJson<Duration>(timeOffset),
       'latitude': serializer.toJson<double>(latitude),
       'longitude': serializer.toJson<double>(longitude),
       'place': serializer.toJson<String>(place),
+      'employeeId': serializer.toJson<String>(employeeId),
       'isSynced': serializer.toJson<bool>(isSynced),
     };
   }
@@ -356,21 +609,23 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     int? id,
     String? imagePath,
     DateTime? deviceTimestamp,
-    DateTime? geoTimestamp,
+    DateTime? lastActivity,
     Duration? timeOffset,
     double? latitude,
     double? longitude,
     String? place,
+    String? employeeId,
     bool? isSynced,
   }) => CapturedImage(
     id: id ?? this.id,
     imagePath: imagePath ?? this.imagePath,
     deviceTimestamp: deviceTimestamp ?? this.deviceTimestamp,
-    geoTimestamp: geoTimestamp ?? this.geoTimestamp,
+    lastActivity: lastActivity ?? this.lastActivity,
     timeOffset: timeOffset ?? this.timeOffset,
     latitude: latitude ?? this.latitude,
     longitude: longitude ?? this.longitude,
     place: place ?? this.place,
+    employeeId: employeeId ?? this.employeeId,
     isSynced: isSynced ?? this.isSynced,
   );
   CapturedImage copyWithCompanion(CapturedImagesCompanion data) {
@@ -381,15 +636,17 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
           data.deviceTimestamp.present
               ? data.deviceTimestamp.value
               : this.deviceTimestamp,
-      geoTimestamp:
-          data.geoTimestamp.present
-              ? data.geoTimestamp.value
-              : this.geoTimestamp,
+      lastActivity:
+          data.lastActivity.present
+              ? data.lastActivity.value
+              : this.lastActivity,
       timeOffset:
           data.timeOffset.present ? data.timeOffset.value : this.timeOffset,
       latitude: data.latitude.present ? data.latitude.value : this.latitude,
       longitude: data.longitude.present ? data.longitude.value : this.longitude,
       place: data.place.present ? data.place.value : this.place,
+      employeeId:
+          data.employeeId.present ? data.employeeId.value : this.employeeId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
     );
   }
@@ -400,11 +657,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
           ..write('id: $id, ')
           ..write('imagePath: $imagePath, ')
           ..write('deviceTimestamp: $deviceTimestamp, ')
-          ..write('geoTimestamp: $geoTimestamp, ')
+          ..write('lastActivity: $lastActivity, ')
           ..write('timeOffset: $timeOffset, ')
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('place: $place, ')
+          ..write('employeeId: $employeeId, ')
           ..write('isSynced: $isSynced')
           ..write(')'))
         .toString();
@@ -415,11 +673,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     id,
     imagePath,
     deviceTimestamp,
-    geoTimestamp,
+    lastActivity,
     timeOffset,
     latitude,
     longitude,
     place,
+    employeeId,
     isSynced,
   );
   @override
@@ -429,11 +688,12 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
           other.id == this.id &&
           other.imagePath == this.imagePath &&
           other.deviceTimestamp == this.deviceTimestamp &&
-          other.geoTimestamp == this.geoTimestamp &&
+          other.lastActivity == this.lastActivity &&
           other.timeOffset == this.timeOffset &&
           other.latitude == this.latitude &&
           other.longitude == this.longitude &&
           other.place == this.place &&
+          other.employeeId == this.employeeId &&
           other.isSynced == this.isSynced);
 }
 
@@ -441,60 +701,66 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
   final Value<int> id;
   final Value<String> imagePath;
   final Value<DateTime> deviceTimestamp;
-  final Value<DateTime> geoTimestamp;
+  final Value<DateTime> lastActivity;
   final Value<Duration> timeOffset;
   final Value<double> latitude;
   final Value<double> longitude;
   final Value<String> place;
+  final Value<String> employeeId;
   final Value<bool> isSynced;
   const CapturedImagesCompanion({
     this.id = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.deviceTimestamp = const Value.absent(),
-    this.geoTimestamp = const Value.absent(),
+    this.lastActivity = const Value.absent(),
     this.timeOffset = const Value.absent(),
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
     this.place = const Value.absent(),
+    this.employeeId = const Value.absent(),
     this.isSynced = const Value.absent(),
   });
   CapturedImagesCompanion.insert({
     this.id = const Value.absent(),
     required String imagePath,
     required DateTime deviceTimestamp,
-    required DateTime geoTimestamp,
+    required DateTime lastActivity,
     required Duration timeOffset,
     required double latitude,
     required double longitude,
     required String place,
+    required String employeeId,
     this.isSynced = const Value.absent(),
   }) : imagePath = Value(imagePath),
        deviceTimestamp = Value(deviceTimestamp),
-       geoTimestamp = Value(geoTimestamp),
+       lastActivity = Value(lastActivity),
        timeOffset = Value(timeOffset),
        latitude = Value(latitude),
        longitude = Value(longitude),
-       place = Value(place);
+       place = Value(place),
+       employeeId = Value(employeeId);
   static Insertable<CapturedImage> custom({
     Expression<int>? id,
     Expression<String>? imagePath,
     Expression<DateTime>? deviceTimestamp,
-    Expression<DateTime>? geoTimestamp,
+    Expression<DateTime>? lastActivity,
     Expression<int>? timeOffset,
     Expression<double>? latitude,
     Expression<double>? longitude,
     Expression<String>? place,
+    Expression<String>? employeeId,
     Expression<bool>? isSynced,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (imagePath != null) 'image_path': imagePath,
       if (deviceTimestamp != null) 'device_timestamp': deviceTimestamp,
-      if (geoTimestamp != null) 'geo_timestamp': geoTimestamp,
+      if (lastActivity != null) 'last_activity': lastActivity,
       if (timeOffset != null) 'time_offset': timeOffset,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (place != null) 'place': place,
+      if (employeeId != null) 'employee_id': employeeId,
       if (isSynced != null) 'is_synced': isSynced,
     });
   }
@@ -503,22 +769,24 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     Value<int>? id,
     Value<String>? imagePath,
     Value<DateTime>? deviceTimestamp,
-    Value<DateTime>? geoTimestamp,
+    Value<DateTime>? lastActivity,
     Value<Duration>? timeOffset,
     Value<double>? latitude,
     Value<double>? longitude,
     Value<String>? place,
+    Value<String>? employeeId,
     Value<bool>? isSynced,
   }) {
     return CapturedImagesCompanion(
       id: id ?? this.id,
       imagePath: imagePath ?? this.imagePath,
       deviceTimestamp: deviceTimestamp ?? this.deviceTimestamp,
-      geoTimestamp: geoTimestamp ?? this.geoTimestamp,
+      lastActivity: lastActivity ?? this.lastActivity,
       timeOffset: timeOffset ?? this.timeOffset,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       place: place ?? this.place,
+      employeeId: employeeId ?? this.employeeId,
       isSynced: isSynced ?? this.isSynced,
     );
   }
@@ -535,8 +803,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     if (deviceTimestamp.present) {
       map['device_timestamp'] = Variable<DateTime>(deviceTimestamp.value);
     }
-    if (geoTimestamp.present) {
-      map['geo_timestamp'] = Variable<DateTime>(geoTimestamp.value);
+    if (lastActivity.present) {
+      map['last_activity'] = Variable<DateTime>(lastActivity.value);
     }
     if (timeOffset.present) {
       map['time_offset'] = Variable<int>(
@@ -552,6 +820,9 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     if (place.present) {
       map['place'] = Variable<String>(place.value);
     }
+    if (employeeId.present) {
+      map['employee_id'] = Variable<String>(employeeId.value);
+    }
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
@@ -564,11 +835,12 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
           ..write('id: $id, ')
           ..write('imagePath: $imagePath, ')
           ..write('deviceTimestamp: $deviceTimestamp, ')
-          ..write('geoTimestamp: $geoTimestamp, ')
+          ..write('lastActivity: $lastActivity, ')
           ..write('timeOffset: $timeOffset, ')
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('place: $place, ')
+          ..write('employeeId: $employeeId, ')
           ..write('isSynced: $isSynced')
           ..write(')'))
         .toString();
@@ -578,24 +850,281 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $UsersTable users = $UsersTable(this);
   late final $CapturedImagesTable capturedImages = $CapturedImagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [capturedImages];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [users, capturedImages];
 }
 
+typedef $$UsersTableCreateCompanionBuilder =
+    UsersCompanion Function({
+      required String employeeId,
+      required String password,
+      Value<int> rowid,
+    });
+typedef $$UsersTableUpdateCompanionBuilder =
+    UsersCompanion Function({
+      Value<String> employeeId,
+      Value<String> password,
+      Value<int> rowid,
+    });
+
+final class $$UsersTableReferences
+    extends BaseReferences<_$AppDatabase, $UsersTable, User> {
+  $$UsersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$CapturedImagesTable, List<CapturedImage>>
+  _capturedImagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.capturedImages,
+    aliasName: $_aliasNameGenerator(
+      db.users.employeeId,
+      db.capturedImages.employeeId,
+    ),
+  );
+
+  $$CapturedImagesTableProcessedTableManager get capturedImagesRefs {
+    final manager = $$CapturedImagesTableTableManager(
+      $_db,
+      $_db.capturedImages,
+    ).filter(
+      (f) => f.employeeId.employeeId.sqlEquals(
+        $_itemColumn<String>('employee_id')!,
+      ),
+    );
+
+    final cache = $_typedResult.readTableOrNull(_capturedImagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get employeeId => $composableBuilder(
+    column: $table.employeeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get password => $composableBuilder(
+    column: $table.password,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> capturedImagesRefs(
+    Expression<bool> Function($$CapturedImagesTableFilterComposer f) f,
+  ) {
+    final $$CapturedImagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.employeeId,
+      referencedTable: $db.capturedImages,
+      getReferencedColumn: (t) => t.employeeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CapturedImagesTableFilterComposer(
+            $db: $db,
+            $table: $db.capturedImages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$UsersTableOrderingComposer
+    extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get employeeId => $composableBuilder(
+    column: $table.employeeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get password => $composableBuilder(
+    column: $table.password,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UsersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UsersTable> {
+  $$UsersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get employeeId => $composableBuilder(
+    column: $table.employeeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get password =>
+      $composableBuilder(column: $table.password, builder: (column) => column);
+
+  Expression<T> capturedImagesRefs<T extends Object>(
+    Expression<T> Function($$CapturedImagesTableAnnotationComposer a) f,
+  ) {
+    final $$CapturedImagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.employeeId,
+      referencedTable: $db.capturedImages,
+      getReferencedColumn: (t) => t.employeeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CapturedImagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.capturedImages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$UsersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UsersTable,
+          User,
+          $$UsersTableFilterComposer,
+          $$UsersTableOrderingComposer,
+          $$UsersTableAnnotationComposer,
+          $$UsersTableCreateCompanionBuilder,
+          $$UsersTableUpdateCompanionBuilder,
+          (User, $$UsersTableReferences),
+          User,
+          PrefetchHooks Function({bool capturedImagesRefs})
+        > {
+  $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$UsersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$UsersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$UsersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> employeeId = const Value.absent(),
+                Value<String> password = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UsersCompanion(
+                employeeId: employeeId,
+                password: password,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String employeeId,
+                required String password,
+                Value<int> rowid = const Value.absent(),
+              }) => UsersCompanion.insert(
+                employeeId: employeeId,
+                password: password,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          $$UsersTableReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: ({capturedImagesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (capturedImagesRefs) db.capturedImages,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (capturedImagesRefs)
+                    await $_getPrefetchedData<User, $UsersTable, CapturedImage>(
+                      currentTable: table,
+                      referencedTable: $$UsersTableReferences
+                          ._capturedImagesRefsTable(db),
+                      managerFromTypedResult:
+                          (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).capturedImagesRefs,
+                      referencedItemsForCurrentItem:
+                          (item, referencedItems) => referencedItems.where(
+                            (e) => e.employeeId == item.employeeId,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UsersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UsersTable,
+      User,
+      $$UsersTableFilterComposer,
+      $$UsersTableOrderingComposer,
+      $$UsersTableAnnotationComposer,
+      $$UsersTableCreateCompanionBuilder,
+      $$UsersTableUpdateCompanionBuilder,
+      (User, $$UsersTableReferences),
+      User,
+      PrefetchHooks Function({bool capturedImagesRefs})
+    >;
 typedef $$CapturedImagesTableCreateCompanionBuilder =
     CapturedImagesCompanion Function({
       Value<int> id,
       required String imagePath,
       required DateTime deviceTimestamp,
-      required DateTime geoTimestamp,
+      required DateTime lastActivity,
       required Duration timeOffset,
       required double latitude,
       required double longitude,
       required String place,
+      required String employeeId,
       Value<bool> isSynced,
     });
 typedef $$CapturedImagesTableUpdateCompanionBuilder =
@@ -603,13 +1132,41 @@ typedef $$CapturedImagesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> imagePath,
       Value<DateTime> deviceTimestamp,
-      Value<DateTime> geoTimestamp,
+      Value<DateTime> lastActivity,
       Value<Duration> timeOffset,
       Value<double> latitude,
       Value<double> longitude,
       Value<String> place,
+      Value<String> employeeId,
       Value<bool> isSynced,
     });
+
+final class $$CapturedImagesTableReferences
+    extends BaseReferences<_$AppDatabase, $CapturedImagesTable, CapturedImage> {
+  $$CapturedImagesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTable _employeeIdTable(_$AppDatabase db) => db.users.createAlias(
+    $_aliasNameGenerator(db.capturedImages.employeeId, db.users.employeeId),
+  );
+
+  $$UsersTableProcessedTableManager get employeeId {
+    final $_column = $_itemColumn<String>('employee_id')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.employeeId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_employeeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
 
 class $$CapturedImagesTableFilterComposer
     extends Composer<_$AppDatabase, $CapturedImagesTable> {
@@ -635,8 +1192,8 @@ class $$CapturedImagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get geoTimestamp => $composableBuilder(
-    column: $table.geoTimestamp,
+  ColumnFilters<DateTime> get lastActivity => $composableBuilder(
+    column: $table.lastActivity,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -665,6 +1222,29 @@ class $$CapturedImagesTableFilterComposer
     column: $table.isSynced,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$UsersTableFilterComposer get employeeId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.employeeId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.employeeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CapturedImagesTableOrderingComposer
@@ -691,8 +1271,8 @@ class $$CapturedImagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get geoTimestamp => $composableBuilder(
-    column: $table.geoTimestamp,
+  ColumnOrderings<DateTime> get lastActivity => $composableBuilder(
+    column: $table.lastActivity,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -720,6 +1300,29 @@ class $$CapturedImagesTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$UsersTableOrderingComposer get employeeId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.employeeId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.employeeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CapturedImagesTableAnnotationComposer
@@ -742,8 +1345,8 @@ class $$CapturedImagesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<DateTime> get geoTimestamp => $composableBuilder(
-    column: $table.geoTimestamp,
+  GeneratedColumn<DateTime> get lastActivity => $composableBuilder(
+    column: $table.lastActivity,
     builder: (column) => column,
   );
 
@@ -764,6 +1367,29 @@ class $$CapturedImagesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get employeeId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.employeeId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.employeeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CapturedImagesTableTableManager
@@ -777,12 +1403,9 @@ class $$CapturedImagesTableTableManager
           $$CapturedImagesTableAnnotationComposer,
           $$CapturedImagesTableCreateCompanionBuilder,
           $$CapturedImagesTableUpdateCompanionBuilder,
-          (
-            CapturedImage,
-            BaseReferences<_$AppDatabase, $CapturedImagesTable, CapturedImage>,
-          ),
+          (CapturedImage, $$CapturedImagesTableReferences),
           CapturedImage,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool employeeId})
         > {
   $$CapturedImagesTableTableManager(
     _$AppDatabase db,
@@ -806,21 +1429,23 @@ class $$CapturedImagesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> imagePath = const Value.absent(),
                 Value<DateTime> deviceTimestamp = const Value.absent(),
-                Value<DateTime> geoTimestamp = const Value.absent(),
+                Value<DateTime> lastActivity = const Value.absent(),
                 Value<Duration> timeOffset = const Value.absent(),
                 Value<double> latitude = const Value.absent(),
                 Value<double> longitude = const Value.absent(),
                 Value<String> place = const Value.absent(),
+                Value<String> employeeId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
               }) => CapturedImagesCompanion(
                 id: id,
                 imagePath: imagePath,
                 deviceTimestamp: deviceTimestamp,
-                geoTimestamp: geoTimestamp,
+                lastActivity: lastActivity,
                 timeOffset: timeOffset,
                 latitude: latitude,
                 longitude: longitude,
                 place: place,
+                employeeId: employeeId,
                 isSynced: isSynced,
               ),
           createCompanionCallback:
@@ -828,21 +1453,23 @@ class $$CapturedImagesTableTableManager
                 Value<int> id = const Value.absent(),
                 required String imagePath,
                 required DateTime deviceTimestamp,
-                required DateTime geoTimestamp,
+                required DateTime lastActivity,
                 required Duration timeOffset,
                 required double latitude,
                 required double longitude,
                 required String place,
+                required String employeeId,
                 Value<bool> isSynced = const Value.absent(),
               }) => CapturedImagesCompanion.insert(
                 id: id,
                 imagePath: imagePath,
                 deviceTimestamp: deviceTimestamp,
-                geoTimestamp: geoTimestamp,
+                lastActivity: lastActivity,
                 timeOffset: timeOffset,
                 latitude: latitude,
                 longitude: longitude,
                 place: place,
+                employeeId: employeeId,
                 isSynced: isSynced,
               ),
           withReferenceMapper:
@@ -851,11 +1478,51 @@ class $$CapturedImagesTableTableManager
                       .map(
                         (e) => (
                           e.readTable(table),
-                          BaseReferences(db, table, e),
+                          $$CapturedImagesTableReferences(db, table, e),
                         ),
                       )
                       .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({employeeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                T extends TableManagerState<
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic,
+                  dynamic
+                >
+              >(state) {
+                if (employeeId) {
+                  state =
+                      state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.employeeId,
+                            referencedTable: $$CapturedImagesTableReferences
+                                ._employeeIdTable(db),
+                            referencedColumn:
+                                $$CapturedImagesTableReferences
+                                    ._employeeIdTable(db)
+                                    .employeeId,
+                          )
+                          as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -870,17 +1537,16 @@ typedef $$CapturedImagesTableProcessedTableManager =
       $$CapturedImagesTableAnnotationComposer,
       $$CapturedImagesTableCreateCompanionBuilder,
       $$CapturedImagesTableUpdateCompanionBuilder,
-      (
-        CapturedImage,
-        BaseReferences<_$AppDatabase, $CapturedImagesTable, CapturedImage>,
-      ),
+      (CapturedImage, $$CapturedImagesTableReferences),
       CapturedImage,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool employeeId})
     >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$UsersTableTableManager get users =>
+      $$UsersTableTableManager(_db, _db.users);
   $$CapturedImagesTableTableManager get capturedImages =>
       $$CapturedImagesTableTableManager(_db, _db.capturedImages);
 }

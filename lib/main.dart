@@ -4,11 +4,13 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/(unused)camera_screen.dart';
 import 'package:nia_project/screens/main_screen.dart';
 import 'package:nia_project/screens/map_screen.dart';
 import 'package:nia_project/screens/splash_screen.dart';
+import 'package:nia_project/time_persistence_service.dart';
 import 'screens/login_screen.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -42,13 +44,13 @@ Future<void> syncDataToRemote(AppDatabase database) async {
   for (var record in unsynced) {
     try {
       // 3. Upload to your API
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://192.168.1.32:8000/sync'),
-      );
+      final api_url = "http://192.168.1.70:8000";
+      var request = http.MultipartRequest('POST', Uri.parse('${api_url}/sync'));
 
       request.fields['timestamp'] = record.deviceTimestamp.toIso8601String();
-      request.fields['geo_timestamp'] = record.geoTimestamp.toIso8601String();
+      request.fields['last_activity'] =
+          record.lastActivity
+              .toIso8601String(); //request.fields['last_activity']
       request.fields['time_offset'] = record.timeOffset.toString();
       request.fields['latitude'] = record.latitude.toString();
       request.fields['longitude'] = record.longitude.toString();
@@ -56,7 +58,7 @@ Future<void> syncDataToRemote(AppDatabase database) async {
       request.files.add(
         await http.MultipartFile.fromPath('image', record.imagePath),
       );
-      request.fields['local_id'] = record.id.toString();
+      request.fields['employee_id'] = record.employeeId.toString();
 
       var response = await request.send();
 
@@ -114,7 +116,10 @@ class MyApp extends StatelessWidget {
             return MainScreen(authService: authService, cameras: cameras);
           }
           return LoginScreen(
-            onLoginSuccess: (token) => authService.login(token),
+            onLoginSuccess: (token, history) {
+              final database = AppDatabase();
+              authService.login(token, history, database);
+            },
           );
         },
       ),

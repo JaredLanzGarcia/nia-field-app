@@ -847,16 +847,281 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
   }
 }
 
+class $TimeAnchorsTable extends TimeAnchors
+    with TableInfo<$TimeAnchorsTable, TimeAnchor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TimeAnchorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _lastTickMeta = const VerificationMeta(
+    'lastTick',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastTick = GeneratedColumn<DateTime>(
+    'last_tick',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _uptimeSecondsMeta = const VerificationMeta(
+    'uptimeSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> uptimeSeconds = GeneratedColumn<int>(
+    'uptime_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, lastTick, uptimeSeconds];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'time_anchors';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TimeAnchor> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('last_tick')) {
+      context.handle(
+        _lastTickMeta,
+        lastTick.isAcceptableOrUnknown(data['last_tick']!, _lastTickMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastTickMeta);
+    }
+    if (data.containsKey('uptime_seconds')) {
+      context.handle(
+        _uptimeSecondsMeta,
+        uptimeSeconds.isAcceptableOrUnknown(
+          data['uptime_seconds']!,
+          _uptimeSecondsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_uptimeSecondsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TimeAnchor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TimeAnchor(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}id'],
+          )!,
+      lastTick:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}last_tick'],
+          )!,
+      uptimeSeconds:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}uptime_seconds'],
+          )!,
+    );
+  }
+
+  @override
+  $TimeAnchorsTable createAlias(String alias) {
+    return $TimeAnchorsTable(attachedDatabase, alias);
+  }
+}
+
+class TimeAnchor extends DataClass implements Insertable<TimeAnchor> {
+  final int id;
+  final DateTime lastTick;
+  final int uptimeSeconds;
+  const TimeAnchor({
+    required this.id,
+    required this.lastTick,
+    required this.uptimeSeconds,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['last_tick'] = Variable<DateTime>(lastTick);
+    map['uptime_seconds'] = Variable<int>(uptimeSeconds);
+    return map;
+  }
+
+  TimeAnchorsCompanion toCompanion(bool nullToAbsent) {
+    return TimeAnchorsCompanion(
+      id: Value(id),
+      lastTick: Value(lastTick),
+      uptimeSeconds: Value(uptimeSeconds),
+    );
+  }
+
+  factory TimeAnchor.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TimeAnchor(
+      id: serializer.fromJson<int>(json['id']),
+      lastTick: serializer.fromJson<DateTime>(json['lastTick']),
+      uptimeSeconds: serializer.fromJson<int>(json['uptimeSeconds']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'lastTick': serializer.toJson<DateTime>(lastTick),
+      'uptimeSeconds': serializer.toJson<int>(uptimeSeconds),
+    };
+  }
+
+  TimeAnchor copyWith({int? id, DateTime? lastTick, int? uptimeSeconds}) =>
+      TimeAnchor(
+        id: id ?? this.id,
+        lastTick: lastTick ?? this.lastTick,
+        uptimeSeconds: uptimeSeconds ?? this.uptimeSeconds,
+      );
+  TimeAnchor copyWithCompanion(TimeAnchorsCompanion data) {
+    return TimeAnchor(
+      id: data.id.present ? data.id.value : this.id,
+      lastTick: data.lastTick.present ? data.lastTick.value : this.lastTick,
+      uptimeSeconds:
+          data.uptimeSeconds.present
+              ? data.uptimeSeconds.value
+              : this.uptimeSeconds,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimeAnchor(')
+          ..write('id: $id, ')
+          ..write('lastTick: $lastTick, ')
+          ..write('uptimeSeconds: $uptimeSeconds')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, lastTick, uptimeSeconds);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TimeAnchor &&
+          other.id == this.id &&
+          other.lastTick == this.lastTick &&
+          other.uptimeSeconds == this.uptimeSeconds);
+}
+
+class TimeAnchorsCompanion extends UpdateCompanion<TimeAnchor> {
+  final Value<int> id;
+  final Value<DateTime> lastTick;
+  final Value<int> uptimeSeconds;
+  const TimeAnchorsCompanion({
+    this.id = const Value.absent(),
+    this.lastTick = const Value.absent(),
+    this.uptimeSeconds = const Value.absent(),
+  });
+  TimeAnchorsCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime lastTick,
+    required int uptimeSeconds,
+  }) : lastTick = Value(lastTick),
+       uptimeSeconds = Value(uptimeSeconds);
+  static Insertable<TimeAnchor> custom({
+    Expression<int>? id,
+    Expression<DateTime>? lastTick,
+    Expression<int>? uptimeSeconds,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lastTick != null) 'last_tick': lastTick,
+      if (uptimeSeconds != null) 'uptime_seconds': uptimeSeconds,
+    });
+  }
+
+  TimeAnchorsCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? lastTick,
+    Value<int>? uptimeSeconds,
+  }) {
+    return TimeAnchorsCompanion(
+      id: id ?? this.id,
+      lastTick: lastTick ?? this.lastTick,
+      uptimeSeconds: uptimeSeconds ?? this.uptimeSeconds,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (lastTick.present) {
+      map['last_tick'] = Variable<DateTime>(lastTick.value);
+    }
+    if (uptimeSeconds.present) {
+      map['uptime_seconds'] = Variable<int>(uptimeSeconds.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimeAnchorsCompanion(')
+          ..write('id: $id, ')
+          ..write('lastTick: $lastTick, ')
+          ..write('uptimeSeconds: $uptimeSeconds')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $UsersTable users = $UsersTable(this);
   late final $CapturedImagesTable capturedImages = $CapturedImagesTable(this);
+  late final $TimeAnchorsTable timeAnchors = $TimeAnchorsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [users, capturedImages];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    users,
+    capturedImages,
+    timeAnchors,
+  ];
 }
 
 typedef $$UsersTableCreateCompanionBuilder =
@@ -1541,6 +1806,172 @@ typedef $$CapturedImagesTableProcessedTableManager =
       CapturedImage,
       PrefetchHooks Function({bool employeeId})
     >;
+typedef $$TimeAnchorsTableCreateCompanionBuilder =
+    TimeAnchorsCompanion Function({
+      Value<int> id,
+      required DateTime lastTick,
+      required int uptimeSeconds,
+    });
+typedef $$TimeAnchorsTableUpdateCompanionBuilder =
+    TimeAnchorsCompanion Function({
+      Value<int> id,
+      Value<DateTime> lastTick,
+      Value<int> uptimeSeconds,
+    });
+
+class $$TimeAnchorsTableFilterComposer
+    extends Composer<_$AppDatabase, $TimeAnchorsTable> {
+  $$TimeAnchorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastTick => $composableBuilder(
+    column: $table.lastTick,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get uptimeSeconds => $composableBuilder(
+    column: $table.uptimeSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TimeAnchorsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TimeAnchorsTable> {
+  $$TimeAnchorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastTick => $composableBuilder(
+    column: $table.lastTick,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get uptimeSeconds => $composableBuilder(
+    column: $table.uptimeSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TimeAnchorsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TimeAnchorsTable> {
+  $$TimeAnchorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastTick =>
+      $composableBuilder(column: $table.lastTick, builder: (column) => column);
+
+  GeneratedColumn<int> get uptimeSeconds => $composableBuilder(
+    column: $table.uptimeSeconds,
+    builder: (column) => column,
+  );
+}
+
+class $$TimeAnchorsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TimeAnchorsTable,
+          TimeAnchor,
+          $$TimeAnchorsTableFilterComposer,
+          $$TimeAnchorsTableOrderingComposer,
+          $$TimeAnchorsTableAnnotationComposer,
+          $$TimeAnchorsTableCreateCompanionBuilder,
+          $$TimeAnchorsTableUpdateCompanionBuilder,
+          (
+            TimeAnchor,
+            BaseReferences<_$AppDatabase, $TimeAnchorsTable, TimeAnchor>,
+          ),
+          TimeAnchor,
+          PrefetchHooks Function()
+        > {
+  $$TimeAnchorsTableTableManager(_$AppDatabase db, $TimeAnchorsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$TimeAnchorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$TimeAnchorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$TimeAnchorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> lastTick = const Value.absent(),
+                Value<int> uptimeSeconds = const Value.absent(),
+              }) => TimeAnchorsCompanion(
+                id: id,
+                lastTick: lastTick,
+                uptimeSeconds: uptimeSeconds,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime lastTick,
+                required int uptimeSeconds,
+              }) => TimeAnchorsCompanion.insert(
+                id: id,
+                lastTick: lastTick,
+                uptimeSeconds: uptimeSeconds,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TimeAnchorsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TimeAnchorsTable,
+      TimeAnchor,
+      $$TimeAnchorsTableFilterComposer,
+      $$TimeAnchorsTableOrderingComposer,
+      $$TimeAnchorsTableAnnotationComposer,
+      $$TimeAnchorsTableCreateCompanionBuilder,
+      $$TimeAnchorsTableUpdateCompanionBuilder,
+      (
+        TimeAnchor,
+        BaseReferences<_$AppDatabase, $TimeAnchorsTable, TimeAnchor>,
+      ),
+      TimeAnchor,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1549,4 +1980,6 @@ class $AppDatabaseManager {
       $$UsersTableTableManager(_db, _db.users);
   $$CapturedImagesTableTableManager get capturedImages =>
       $$CapturedImagesTableTableManager(_db, _db.capturedImages);
+  $$TimeAnchorsTableTableManager get timeAnchors =>
+      $$TimeAnchorsTableTableManager(_db, _db.timeAnchors);
 }

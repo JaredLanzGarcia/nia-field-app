@@ -25,7 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   final TextEditingController _dateController = TextEditingController();
   final database = AppDatabase();
   DateTime selectedDate = DateTime.now();
-  final api_url = 'http://192.168.1.70:8000';
+  final api_url = 'http://192.168.68.134:8000';
 
   @override
   void initState() {

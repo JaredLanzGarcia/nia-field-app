@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:nia_project/database.dart';
+import 'package:nia_project/heartbeat_service.dart';
 import 'package:nia_project/screens/(unused)camera_screen.dart';
 import 'package:nia_project/screens/main_screen.dart';
 import 'package:nia_project/screens/map_screen.dart';
@@ -44,7 +45,7 @@ Future<void> syncDataToRemote(AppDatabase database) async {
   for (var record in unsynced) {
     try {
       // 3. Upload to your API
-      final api_url = "http://192.168.1.70:8000";
+      final api_url = "http://192.168.68.134:8000";
       var request = http.MultipartRequest('POST', Uri.parse('${api_url}/sync'));
 
       request.fields['timestamp'] = record.deviceTimestamp.toIso8601String();
@@ -78,13 +79,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final cameras = await availableCameras();
+  final db = AppDatabase();
+  final heartbeat = HeartbeatService(db);
+  // ^ Stopwatch starts here on first reference
+
+  heartbeat.start(); // ← begins the 30-second periodic check
+
   Workmanager().initialize(callbackDispatcher);
-  runApp(MyApp(cameras: cameras));
+  runApp(MyApp(cameras: cameras, heartbeat: heartbeat));
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key, required this.cameras});
+  MyApp({super.key, required this.cameras, required this.heartbeat});
   final cameras;
+  final HeartbeatService heartbeat;
 
   // Colors
   // FF5B5B red
@@ -113,7 +121,11 @@ class MyApp extends StatelessWidget {
             return SplashScreen();
           }
           if (snapshot.data == true) {
-            return MainScreen(authService: authService, cameras: cameras);
+            return MainScreen(
+              authService: authService,
+              cameras: cameras,
+              heartbeat: heartbeat,
+            );
           }
           return LoginScreen(
             onLoginSuccess: (token, history) {

@@ -1,5 +1,6 @@
 import 'package:flutter_kronos/flutter_kronos.dart';
 import 'package:nia_project/time_persistence_service.dart';
+import 'package:ntp/ntp.dart';
 
 class TimeSecurityService {
   /// Syncs with a trusted NTP server. Run this at least once when online.
@@ -20,13 +21,17 @@ class TimeSecurityService {
 
   /// Checks if the user's device clock is tampered.
   static Future<bool> isTimeTampered({int thresholdMinutes = 5}) async {
-    DateTime? realTime = await getReliableTime();
-    if (realTime == null) return false; // Cannot verify without a sync
-
+    try {
+    // Get the exact time from Google's NTP server
+    DateTime networkTime = await NTP.now();
     DateTime deviceTime = DateTime.now();
-    Duration difference = deviceTime.difference(realTime).abs();
 
-    return difference.inMinutes > thresholdMinutes;
+    // If the difference is more than 2 minutes, the user is messing with the clock
+    return deviceTime.difference(networkTime).abs().inMinutes > 2;
+  } catch (e) {
+    // If offline, we can't verify via NTP. Fallback to Heartbeat logic.
+    return false; 
+  }
   }
 
   static Future<void> performSecureSave() async {

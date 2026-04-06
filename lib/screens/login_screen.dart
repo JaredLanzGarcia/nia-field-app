@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final database = AppDatabase();
-  final api_url = "http://192.168.1.70:8000";
+  final api_url = "http://192.168.68.134:8000";
   bool isObscured = true;
   String? errorMessage;
 

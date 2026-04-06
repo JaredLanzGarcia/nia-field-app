@@ -27,6 +27,12 @@ class CapturedImages extends Table {
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
 
+class TimeAnchors extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get lastTick => dateTime()();
+  IntColumn get uptimeSeconds => integer()(); // Seconds since boot
+}
+
 class DurationConverter extends TypeConverter<Duration, int> {
   const DurationConverter();
 
@@ -41,7 +47,7 @@ class DurationConverter extends TypeConverter<Duration, int> {
   }
 }
 
-@DriftDatabase(tables: [CapturedImages])
+@DriftDatabase(tables: [Users, CapturedImages, TimeAnchors])
 class AppDatabase extends _$AppDatabase {
   // After generating code, this class needs to define a `schemaVersion` getter
   // and a constructor telling drift where the database should be stored.
@@ -63,12 +69,12 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  Future<void> clearUserData(){
+  Future<void> clearUserData() {
     return delete(capturedImages).go();
   }
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 17;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'my_database');

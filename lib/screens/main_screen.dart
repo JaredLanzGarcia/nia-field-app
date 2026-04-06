@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
+import 'package:nia_project/heartbeat_service.dart';
 import 'package:nia_project/screens/full_image_viewer.dart';
 import 'package:nia_project/screens/map_screen.dart';
 import 'package:nia_project/time_persistence_service.dart';
@@ -24,9 +25,15 @@ import 'package:path/path.dart' as p;
 import 'package:workmanager/workmanager.dart';
 
 class MainScreen extends StatefulWidget {
-  MainScreen({super.key, required this.authService, required this.cameras});
+  MainScreen({
+    super.key,
+    required this.authService,
+    required this.cameras,
+    required this.heartbeat,
+  });
   final AuthService authService;
   final cameras;
+  final HeartbeatService heartbeat;
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -38,14 +45,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final database = AppDatabase();
   geocode.Placemark? place;
   WebSettings wsetting = WebSettings();
-  final api_url = "http://192.168.1.70:8000";
+  final api_url = "http://192.168.68.134:8000";
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // checkConsistency();
   }
 
   @override
@@ -163,6 +169,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _takePhoto() async {
+    await TimeSecurityService.performSecureSave();
     // 1. Check/Request Location Permission
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -369,7 +376,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           FloatingActionButton(
             backgroundColor: Colors.green.shade200,
             foregroundColor: Colors.grey.shade100,
-            onPressed: _takePhoto,
+            onPressed: () async {
+              AppDatabase db = AppDatabase();
+              await db.delete(db.timeAnchors).go();
+              await widget.heartbeat.debugTick();
+            },
+
+            // _takePhoto,
             child: Icon(Icons.camera_alt),
           ),
         ],

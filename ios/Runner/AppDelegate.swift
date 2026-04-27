@@ -10,4 +10,8 @@ import UIKit
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+  if call.method == "getUptimeMillis" {
+    let uptime = ProcessInfo.processInfo.systemUptime * 1000 // ✅ monotonic
+    result(Int(uptime))
+  }
 }

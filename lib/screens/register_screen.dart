@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
 import 'package:nia_project/screens/main_screen.dart';
+import 'package:nia_project/url_of_db.dart';
 
 class RegisterScreen extends StatelessWidget {
   RegisterScreen({super.key});
@@ -17,12 +18,17 @@ class RegisterScreen extends StatelessWidget {
       _passwordController.text,
     );
     print(message);
+    print(_empIdController.text);
+    print(_passwordController.text);
   }
 
   Future<String?> callLoginApi(String empId, String password) async {
     try {
       // 1. Point to your Python server (Use your computer's local IP if testing)
-      final url = Uri.parse('http://192.168.1.253:8000/register');
+      final url = Uri.parse("${UrlOfDb.dbUrl}/register");
+
+      // add unique id of device and learn iOS deployment
+      // merge API of Andrei
 
       // 2. Send the POST request
       final response = await http.post(
@@ -78,7 +84,6 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     Gap(16),
                     TextFormField(
-                      obscureText: true,
                       controller: _passwordController,
                       decoration: inputDecor("Password", isPassword: true),
                     ),

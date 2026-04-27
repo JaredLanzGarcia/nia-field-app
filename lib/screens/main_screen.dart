@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gal/gal.dart';
 import 'package:gap/gap.dart';
 import 'package:geocoding/geocoding.dart' as geocode;
@@ -19,9 +20,11 @@ import 'package:nia_project/screens/full_image_viewer.dart';
 import 'package:nia_project/screens/map_screen.dart';
 import 'package:nia_project/time_persistence_service.dart';
 import 'package:nia_project/time_security_service.dart';
+import 'package:nia_project/url_of_db.dart';
 import 'package:ntp/ntp.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 class MainScreen extends StatefulWidget {
@@ -29,11 +32,11 @@ class MainScreen extends StatefulWidget {
     super.key,
     required this.authService,
     required this.cameras,
-    required this.heartbeat,
+    required this.db,
   });
   final AuthService authService;
   final cameras;
-  final HeartbeatService heartbeat;
+  final AppDatabase db;
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -42,10 +45,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   // To store the captured photo
   final ImagePicker _picker = ImagePicker();
-  final database = AppDatabase();
   geocode.Placemark? place;
   WebSettings wsetting = WebSettings();
-  final api_url = "http://192.168.68.134:8000";
+  final api_url = UrlOfDb.dbUrl;
 
   @override
   void initState() {
@@ -65,7 +67,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     // TODO: implement didChangeAppLifecycleState
     if (state == AppLifecycleState.resumed) {
-      await TimeSecurityService.performSecureSave();
+      await TimeSecurityService.performSecureSave(db: widget.db);
     }
   }
 
@@ -82,7 +84,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<void> reconcileDatabase(String currentEmployeeId) async {
     try {
-      final response = await http.get(Uri.parse('${api_url}/verify-sync'));
+      const storage = FlutterSecureStorage();
+      final String? token = await storage.read(key: 'jwt_token');
+      if (token == null) return;
+
+      final response = await http.get(
+        Uri.parse('${api_url}/verify-sync'),
+        headers: {'Authorization': 'Bearer $token'}, // ← add header
+      );
+
       if (response.statusCode != 200) return;
 
       final List<String> serverKeys = List<String>.from(
@@ -92,7 +102,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       final DateFormat syncFormatter = DateFormat('yyyy-MM-dd HH:mm:ss');
 
       final localSyncedRecords =
-          await (database.select(database.capturedImages)
+          await (widget.db.select(widget.db.capturedImages)
             ..where((t) => t.isSynced.equals(true))).get();
 
       for (var record in localSyncedRecords) {
@@ -103,7 +113,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         String localKey = "${currentEmployeeId}_${formattedDate}";
 
         if (!serverKeys.contains(localKey)) {
-          await (database.update(database.capturedImages)..where(
+          await (widget.db.update(widget.db.capturedImages)..where(
             (t) => t.id.equals(record.id),
           )).write(const CapturedImagesCompanion(isSynced: Value(false)));
 
@@ -126,7 +136,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final permanentFile = await File(
       photo.path,
     ).copy('${appDir.path}/$fileName');
-    final currentUser = await database.select(database.users).getSingleOrNull();
+    final currentUser =
+        await widget.db.select(widget.db.users).getSingleOrNull();
 
     // 1. Get the time the user is CLAIMING it is right now
     DateTime deviceNow = DateTime.now();
@@ -137,6 +148,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     print(deviceNow);
     print(lastActivity);
 
+    final anchors = await widget.db.select(widget.db.timeAnchors).get();
+    print(anchors[anchors.length - 1].lastTick);
+
     if (currentUser != null) {
       final String empId = currentUser.employeeId;
 
@@ -146,8 +160,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               : "name: ${place!.name}\nstreet: ${place!.street}\nlocality: ${place!.locality}\nSAA: ${place!.subAdministrativeArea}\npcode: ${place!.postalCode}";
       //change the "deviceTimestamp" and "geoTimestamp" values into deviceNow and lastActivity
       // 2. Insert into Drift
-      await database
-          .into(database.capturedImages)
+      await widget.db
+          .into(widget.db.capturedImages)
           .insertOnConflictUpdate(
             CapturedImagesCompanion.insert(
               imagePath: permanentFile.path,
@@ -169,7 +183,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _takePhoto() async {
-    await TimeSecurityService.performSecureSave();
+    await TimeSecurityService.performSecureSave(db: widget.db);
     // 1. Check/Request Location Permission
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -209,7 +223,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           IconButton(
             onPressed: () async {
               final currentUser =
-                  await database.select(database.users).getSingleOrNull();
+                  await widget.db.select(widget.db.users).getSingleOrNull();
 
               if (currentUser != null) {
                 final String empId = currentUser.employeeId;
@@ -224,7 +238,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) {
-                    return MapScreen();
+                    return MapScreen(db: widget.db);
                   },
                 ),
               );
@@ -247,7 +261,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context, true);
-                            widget.authService.logout(database);
+                            widget.authService.logout(widget.db);
                           },
                           child: const Text(
                             "Logout",
@@ -266,7 +280,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         children: [
           Expanded(
             child: StreamBuilder<List<CapturedImage>>(
-              stream: database.select(database.capturedImages).watch(),
+              stream: widget.db.select(widget.db.capturedImages).watch(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -322,23 +336,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                                         imageUrl: item.imagePath,
                                         width: 50,
                                         height: 50,
-                                        fit: BoxFit.cover,
+                                        fit: BoxFit.fill,
                                         placeholder:
-                                            (context, url) => Center(
-                                              child: CircularProgressIndicator(
-                                                color: Colors.green,
+                                            (context, url) => SizedBox(
+                                              child: Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.green,
+                                                    ),
                                               ),
                                             ),
                                         errorWidget:
-                                            (context, url, error) =>
-                                                Icon(Icons.error),
+                                            (context, url, error) => Icon(
+                                              Icons.broken_image,
+                                              size: 40,
+                                              color: Colors.grey,
+                                            ),
+                                        httpHeaders: const {},
                                       )
-                                      : Image.file(
-                                        File(item.imagePath),
-                                        width: 50,
-                                        height: 50,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      : _LocalImageWidget(path: item.imagePath),
                             ),
                             title: Text(
                               "Time: ${DateFormat.jm().format(item.deviceTimestamp)}",
@@ -377,12 +393,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             backgroundColor: Colors.green.shade200,
             foregroundColor: Colors.grey.shade100,
             onPressed: () async {
-              AppDatabase db = AppDatabase();
-              await db.delete(db.timeAnchors).go();
-              await widget.heartbeat.debugTick();
+              // await widget.db.delete(widget.db.timeAnchors).go();
+
+              // await widget.heartbeat.debugTick();
+
+              // final anchors =
+              //     await widget.db.select(widget.db.timeAnchors).get();
+              // print(anchors.length);
+
+              // print(anchors[anchors.length - 1].lastTick);
+              await TimeSecurityService.performSecureSave(db: widget.db);
+
+              _takePhoto();
             },
 
-            // _takePhoto,
             child: Icon(Icons.camera_alt),
           ),
         ],
@@ -423,6 +447,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                     MaterialPageRoute(
                       builder:
                           (_) => MapScreen(
+                            db: widget.db,
                             item_lat: item.latitude,
                             item_long: item.longitude,
                             item_date: item.deviceTimestamp,
@@ -461,14 +486,56 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     try {
       places = await geocode.placemarkFromCoordinates(latitude, longitude);
     } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Could not find address")));
       return;
     }
     place = places.first;
     setState(() {});
     // print(places);
+  }
+}
+
+/// Safely loads a local file image, showing a fallback if file doesn't exist.
+class _LocalImageWidget extends StatefulWidget {
+  final String path;
+  const _LocalImageWidget({required this.path});
+
+  @override
+  State<_LocalImageWidget> createState() => _LocalImageWidgetState();
+}
+
+class _LocalImageWidgetState extends State<_LocalImageWidget> {
+  late Future<bool> _fileExists;
+
+  @override
+  void initState() {
+    super.initState();
+    _fileExists = File(widget.path).exists();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _fileExists,
+      builder: (context, snapshot) {
+        if (snapshot.data == true) {
+          return Image.file(
+            File(widget.path),
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            // Catch any remaining decode errors
+            errorBuilder:
+                (context, error, stackTrace) =>
+                    const Icon(Icons.broken_image, color: Colors.grey),
+          );
+        }
+        // File doesn't exist — show placeholder instead of crashing
+        return const SizedBox(
+          width: 50,
+          height: 50,
+          child: Icon(Icons.image_not_supported, color: Colors.grey),
+        );
+      },
+    );
   }
 }

@@ -2,13 +2,22 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
+import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/main_screen.dart';
+import 'package:nia_project/time_security_service.dart';
+import 'package:nia_project/url_of_db.dart';
 
 class LoginScreen extends StatefulWidget {
+  LoginScreen({
+    super.key,
+    required this.onLoginSuccess,
+    required this.db,
+    required this.authService,
+  });
   final Function(String, List<dynamic>) onLoginSuccess;
-  LoginScreen({super.key, required this.onLoginSuccess});
-
+  final AppDatabase db;
+  final AuthService authService;
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -17,8 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _empIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final database = AppDatabase();
-  final api_url = "http://192.168.68.134:8000";
+  final api_url = UrlOfDb.dbUrl;
   bool isObscured = true;
   String? errorMessage;
 
@@ -44,11 +52,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        final int empId = data['employee_id'];
-        await database.delete(database.users).go();
+        final int empId = int.parse(data['employee_id']);
+        await widget.db.delete(widget.db.users).go();
 
-        await database
-            .into(database.users)
+        await widget.db
+            .into(widget.db.users)
             .insert(
               UsersCompanion.insert(
                 employeeId: empId.toString(),
@@ -56,6 +64,26 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             );
         widget.onLoginSuccess(result['access_token'], result['history']);
+
+        final serverTime = DateTime.parse(result['server_time']);
+        final deviceTime = DateTime.now();
+        final diff = deviceTime.difference(serverTime.toLocal()).abs();
+        print(serverTime);
+        print(serverTime.toLocal());
+
+        if (diff.inMinutes > 5) {
+          print(
+            "🚨 Clock tampered at login — server says $serverTime, device says $deviceTime",
+          );
+          await widget.authService.logout(widget.db);
+          return;
+        }
+
+        // Only reaches here if time is clean
+        await TimeSecurityService.saveLoginAnchor(
+          db: widget.db,
+          serverTime: serverTime.toLocal(),
+        );
       }
     }
   }

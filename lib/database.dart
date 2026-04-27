@@ -73,6 +73,17 @@ class AppDatabase extends _$AppDatabase {
     return delete(capturedImages).go();
   }
 
+  Future<void> upsertTimeAnchor(DateTime wallTime, int uptimeSeconds) async {
+    // Always delete old anchors and keep just one clean row
+    await delete(timeAnchors).go();
+    await into(timeAnchors).insert(
+      TimeAnchorsCompanion.insert(
+        lastTick: wallTime,
+        uptimeSeconds: uptimeSeconds,
+      ),
+    );
+  }
+
   @override
   int get schemaVersion => 17;
 

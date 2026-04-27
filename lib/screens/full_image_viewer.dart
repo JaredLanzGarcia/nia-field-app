@@ -35,6 +35,7 @@ class _FullImageViewerState extends State<FullImageViewer> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    print(widget.imagePath);
   }
 
   @override

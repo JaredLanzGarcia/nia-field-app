@@ -9,9 +9,17 @@ import 'package:geocoding/geocoding.dart' as geocode;
 import 'package:intl/intl.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/full_image_viewer.dart';
+import 'package:nia_project/url_of_db.dart';
 
 class MapScreen extends StatefulWidget {
-  MapScreen({super.key, this.item_lat, this.item_long, this.item_date});
+  MapScreen({
+    super.key,
+    required this.db,
+    this.item_lat,
+    this.item_long,
+    this.item_date,
+  });
+  final AppDatabase db;
   double? item_lat;
   double? item_long;
   DateTime? item_date;
@@ -23,9 +31,8 @@ class _MapScreenState extends State<MapScreen> {
   Set<Marker> _markers = {};
   late GoogleMapController mapController;
   final TextEditingController _dateController = TextEditingController();
-  final database = AppDatabase();
   DateTime selectedDate = DateTime.now();
-  final api_url = 'http://192.168.68.134:8000';
+  final api_url = UrlOfDb.dbUrl;
 
   @override
   void initState() {
@@ -54,7 +61,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadMarkers() async {
     // final response = await http.get(Uri.parse('$api_url/markers'));
-    final allImages = await database.select(database.capturedImages).get();
+    final allImages = await widget.db.select(widget.db.capturedImages).get();
 
     final filtered =
         allImages.where((img) {

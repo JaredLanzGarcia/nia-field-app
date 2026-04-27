@@ -47,6 +47,7 @@ dependencies:
   image: ^4.8.0
   image_picker: ^1.2.1
   intl: ^0.20.2
+  mime: ^2.0.0
   native_device_orientation: ^2.1.0
   ntp: ^2.0.0
   path: ^1.9.1

@@ -49,6 +49,8 @@ class AuthService {
     }
 
     _authController.add(true); // Notify StreamBuilder
+
+    
   }
 
   // Inside your AuthService class

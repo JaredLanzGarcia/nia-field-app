@@ -32,6 +32,7 @@ dependencies:
   camera: ^0.11.2
   connectivity_plus: ^7.0.0
   cupertino_icons: ^1.0.8
+  device_info_plus: ^12.4.0
   drift: ^2.30.1
   drift_flutter: ^0.2.8
   flutter:

@@ -15,6 +15,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
+import 'package:nia_project/device_service.dart';
 import 'package:nia_project/heartbeat_service.dart';
 import 'package:nia_project/screens/full_image_viewer.dart';
 import 'package:nia_project/screens/map_screen.dart';
@@ -136,6 +137,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final permanentFile = await File(
       photo.path,
     ).copy('${appDir.path}/$fileName');
+    final deviceId = await DeviceService.getDeviceId();
     final currentUser =
         await widget.db.select(widget.db.users).getSingleOrNull();
 
@@ -172,6 +174,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               longitude: pos.longitude,
               place: shortPlace,
               employeeId: empId,
+              deviceId: Value(deviceId),
             ),
           );
       setState(() {
@@ -190,7 +193,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       permission = await Geolocator.requestPermission();
     }
     // This line opens the camera directly
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
 
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
@@ -403,6 +409,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
               // print(anchors[anchors.length - 1].lastTick);
               await TimeSecurityService.performSecureSave(db: widget.db);
+
+              final deviceId = await DeviceService.getDeviceId();
 
               _takePhoto();
             },

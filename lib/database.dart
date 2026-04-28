@@ -25,6 +25,8 @@ class CapturedImages extends Table {
 
   // This flag tells us if the record has reached the cloud
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  TextColumn get deviceId => text().withDefault(const Constant('unknown'))();
+  TextColumn get status => text().withDefault(const Constant('Pending'))();
 }
 
 class TimeAnchors extends Table {
@@ -85,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'my_database');

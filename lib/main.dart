@@ -74,6 +74,8 @@ Future<void> syncDataToRemote(AppDatabase database) async {
       request.fields['latitude'] = record.latitude.toString();
       request.fields['longitude'] = record.longitude.toString();
       request.fields['place'] = record.place.toString();
+      request.fields['device_id'] = record.deviceId;
+      request.fields['status'] = record.status;
 
       final imageFile = File(record.imagePath);
       final mimeType = lookupMimeType(record.imagePath) ?? 'image/jpeg';

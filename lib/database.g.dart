@@ -344,6 +344,28 @@ class $CapturedImagesTable extends CapturedImages
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Pending'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -356,6 +378,8 @@ class $CapturedImagesTable extends CapturedImages
     place,
     employeeId,
     isSynced,
+    deviceId,
+    status,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -440,6 +464,18 @@ class $CapturedImagesTable extends CapturedImages
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
     return context;
   }
 
@@ -500,6 +536,16 @@ class $CapturedImagesTable extends CapturedImages
             DriftSqlType.bool,
             data['${effectivePrefix}is_synced'],
           )!,
+      deviceId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}device_id'],
+          )!,
+      status:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}status'],
+          )!,
     );
   }
 
@@ -523,6 +569,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
   final String place;
   final String employeeId;
   final bool isSynced;
+  final String deviceId;
+  final String status;
   const CapturedImage({
     required this.id,
     required this.imagePath,
@@ -534,6 +582,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     required this.place,
     required this.employeeId,
     required this.isSynced,
+    required this.deviceId,
+    required this.status,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -552,6 +602,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     map['place'] = Variable<String>(place);
     map['employee_id'] = Variable<String>(employeeId);
     map['is_synced'] = Variable<bool>(isSynced);
+    map['device_id'] = Variable<String>(deviceId);
+    map['status'] = Variable<String>(status);
     return map;
   }
 
@@ -567,6 +619,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       place: Value(place),
       employeeId: Value(employeeId),
       isSynced: Value(isSynced),
+      deviceId: Value(deviceId),
+      status: Value(status),
     );
   }
 
@@ -586,6 +640,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       place: serializer.fromJson<String>(json['place']),
       employeeId: serializer.fromJson<String>(json['employeeId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      status: serializer.fromJson<String>(json['status']),
     );
   }
   @override
@@ -602,6 +658,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       'place': serializer.toJson<String>(place),
       'employeeId': serializer.toJson<String>(employeeId),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'status': serializer.toJson<String>(status),
     };
   }
 
@@ -616,6 +674,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     String? place,
     String? employeeId,
     bool? isSynced,
+    String? deviceId,
+    String? status,
   }) => CapturedImage(
     id: id ?? this.id,
     imagePath: imagePath ?? this.imagePath,
@@ -627,6 +687,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     place: place ?? this.place,
     employeeId: employeeId ?? this.employeeId,
     isSynced: isSynced ?? this.isSynced,
+    deviceId: deviceId ?? this.deviceId,
+    status: status ?? this.status,
   );
   CapturedImage copyWithCompanion(CapturedImagesCompanion data) {
     return CapturedImage(
@@ -648,6 +710,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
       employeeId:
           data.employeeId.present ? data.employeeId.value : this.employeeId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      status: data.status.present ? data.status.value : this.status,
     );
   }
 
@@ -663,7 +727,9 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
           ..write('longitude: $longitude, ')
           ..write('place: $place, ')
           ..write('employeeId: $employeeId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('status: $status')
           ..write(')'))
         .toString();
   }
@@ -680,6 +746,8 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
     place,
     employeeId,
     isSynced,
+    deviceId,
+    status,
   );
   @override
   bool operator ==(Object other) =>
@@ -694,7 +762,9 @@ class CapturedImage extends DataClass implements Insertable<CapturedImage> {
           other.longitude == this.longitude &&
           other.place == this.place &&
           other.employeeId == this.employeeId &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.deviceId == this.deviceId &&
+          other.status == this.status);
 }
 
 class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
@@ -708,6 +778,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
   final Value<String> place;
   final Value<String> employeeId;
   final Value<bool> isSynced;
+  final Value<String> deviceId;
+  final Value<String> status;
   const CapturedImagesCompanion({
     this.id = const Value.absent(),
     this.imagePath = const Value.absent(),
@@ -719,6 +791,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     this.place = const Value.absent(),
     this.employeeId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.status = const Value.absent(),
   });
   CapturedImagesCompanion.insert({
     this.id = const Value.absent(),
@@ -731,6 +805,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     required String place,
     required String employeeId,
     this.isSynced = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.status = const Value.absent(),
   }) : imagePath = Value(imagePath),
        deviceTimestamp = Value(deviceTimestamp),
        lastActivity = Value(lastActivity),
@@ -750,6 +826,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     Expression<String>? place,
     Expression<String>? employeeId,
     Expression<bool>? isSynced,
+    Expression<String>? deviceId,
+    Expression<String>? status,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -762,6 +840,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
       if (place != null) 'place': place,
       if (employeeId != null) 'employee_id': employeeId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (deviceId != null) 'device_id': deviceId,
+      if (status != null) 'status': status,
     });
   }
 
@@ -776,6 +856,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     Value<String>? place,
     Value<String>? employeeId,
     Value<bool>? isSynced,
+    Value<String>? deviceId,
+    Value<String>? status,
   }) {
     return CapturedImagesCompanion(
       id: id ?? this.id,
@@ -788,6 +870,8 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
       place: place ?? this.place,
       employeeId: employeeId ?? this.employeeId,
       isSynced: isSynced ?? this.isSynced,
+      deviceId: deviceId ?? this.deviceId,
+      status: status ?? this.status,
     );
   }
 
@@ -826,6 +910,12 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
     return map;
   }
 
@@ -841,7 +931,9 @@ class CapturedImagesCompanion extends UpdateCompanion<CapturedImage> {
           ..write('longitude: $longitude, ')
           ..write('place: $place, ')
           ..write('employeeId: $employeeId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('status: $status')
           ..write(')'))
         .toString();
   }
@@ -1391,6 +1483,8 @@ typedef $$CapturedImagesTableCreateCompanionBuilder =
       required String place,
       required String employeeId,
       Value<bool> isSynced,
+      Value<String> deviceId,
+      Value<String> status,
     });
 typedef $$CapturedImagesTableUpdateCompanionBuilder =
     CapturedImagesCompanion Function({
@@ -1404,6 +1498,8 @@ typedef $$CapturedImagesTableUpdateCompanionBuilder =
       Value<String> place,
       Value<String> employeeId,
       Value<bool> isSynced,
+      Value<String> deviceId,
+      Value<String> status,
     });
 
 final class $$CapturedImagesTableReferences
@@ -1488,6 +1584,16 @@ class $$CapturedImagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$UsersTableFilterComposer get employeeId {
     final $$UsersTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -1566,6 +1672,16 @@ class $$CapturedImagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get employeeId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -1632,6 +1748,12 @@ class $$CapturedImagesTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get employeeId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -1701,6 +1823,8 @@ class $$CapturedImagesTableTableManager
                 Value<String> place = const Value.absent(),
                 Value<String> employeeId = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> status = const Value.absent(),
               }) => CapturedImagesCompanion(
                 id: id,
                 imagePath: imagePath,
@@ -1712,6 +1836,8 @@ class $$CapturedImagesTableTableManager
                 place: place,
                 employeeId: employeeId,
                 isSynced: isSynced,
+                deviceId: deviceId,
+                status: status,
               ),
           createCompanionCallback:
               ({
@@ -1725,6 +1851,8 @@ class $$CapturedImagesTableTableManager
                 required String place,
                 required String employeeId,
                 Value<bool> isSynced = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> status = const Value.absent(),
               }) => CapturedImagesCompanion.insert(
                 id: id,
                 imagePath: imagePath,
@@ -1736,6 +1864,8 @@ class $$CapturedImagesTableTableManager
                 place: place,
                 employeeId: employeeId,
                 isSynced: isSynced,
+                deviceId: deviceId,
+                status: status,
               ),
           withReferenceMapper:
               (p0) =>

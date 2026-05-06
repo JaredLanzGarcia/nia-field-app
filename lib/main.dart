@@ -120,7 +120,6 @@ Future<void> syncDataToRemote(AppDatabase database) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  final cameras = await availableCameras();
   final db = AppDatabase();
 
   final rebooted = await TimeSecurityService.hasDeviceRebooted();
@@ -135,12 +134,11 @@ void main() async {
   heartbeat.start(); // ← begins the 30-second periodic check
 
   Workmanager().initialize(callbackDispatcher);
-  runApp(MyApp(cameras: cameras, db: db));
+  runApp(MyApp(db: db));
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key, required this.cameras, required this.db});
-  final cameras;
+  MyApp({super.key, required this.db});
   final AppDatabase db;
 
   // Colors
@@ -170,11 +168,7 @@ class MyApp extends StatelessWidget {
             return SplashScreen();
           }
           if (snapshot.data == true) {
-            return MainScreen(
-              authService: authService,
-              cameras: cameras,
-              db: db,
-            );
+            return MainScreen(authService: authService, db: db);
           }
           return LoginScreen(
             onLoginSuccess: (token, history) {

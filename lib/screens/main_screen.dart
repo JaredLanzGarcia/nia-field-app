@@ -29,14 +29,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 class MainScreen extends StatefulWidget {
-  MainScreen({
-    super.key,
-    required this.authService,
-    required this.cameras,
-    required this.db,
-  });
+  MainScreen({super.key, required this.authService, required this.db});
   final AuthService authService;
-  final cameras;
   final AppDatabase db;
 
   @override
@@ -49,12 +43,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   geocode.Placemark? place;
   WebSettings wsetting = WebSettings();
   final api_url = UrlOfDb.dbUrl;
+  bool _isGridView = false;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runReconcileIfOnline();
+    });
   }
 
   @override
@@ -69,6 +67,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // TODO: implement didChangeAppLifecycleState
     if (state == AppLifecycleState.resumed) {
       await TimeSecurityService.performSecureSave(db: widget.db);
+      await _runReconcileIfOnline();
     }
   }
 
@@ -83,8 +82,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> reconcileDatabase(String currentEmployeeId) async {
+  Future<void> _runReconcileIfOnline() async {
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity == ConnectivityResult.none) return;
+
+    await reconcileDatabase();
+  }
+
+  Future<void> reconcileDatabase() async {
     try {
+      // Fetch the user INSIDE the function
+      final currentUser =
+          await widget.db.select(widget.db.users).getSingleOrNull();
+      if (currentUser == null) return;
+      final String currentEmployeeId = currentUser.employeeId;
+
       const storage = FlutterSecureStorage();
       final String? token = await storage.read(key: 'jwt_token');
       if (token == null) return;
@@ -125,6 +137,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }
 
       scheduleSync();
+      print("Reconciliation done.");
     } catch (e) {
       print("Reconciliation failed: $e");
     }
@@ -159,7 +172,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       String shortPlace =
           place == null
               ? "No place found"
-              : "name: ${place!.name}\nstreet: ${place!.street}\nlocality: ${place!.locality}\nSAA: ${place!.subAdministrativeArea}\npcode: ${place!.postalCode}";
+              : "${place!.street}\n, ${place!.locality}";
       //change the "deviceTimestamp" and "geoTimestamp" values into deviceNow and lastActivity
       // 2. Insert into Drift
       await widget.db
@@ -224,21 +237,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("NIA"),
+        title: Text("P.U.L.S.E."), //Make a logo
         actions: [
-          IconButton(
-            onPressed: () async {
-              final currentUser =
-                  await widget.db.select(widget.db.users).getSingleOrNull();
+          // IconButton(
+          //   onPressed: () async {
+          //     final currentUser =
+          //         await widget.db.select(widget.db.users).getSingleOrNull();
 
-              if (currentUser != null) {
-                final String empId = currentUser.employeeId;
+          //     if (currentUser != null) {
+          //       final String empId = currentUser.employeeId;
 
-                await reconcileDatabase(empId);
-              }
-            },
-            icon: Icon(Icons.refresh),
-          ),
+          //       await reconcileDatabase();
+          //     }
+          //   },
+          //   icon: Icon(Icons.refresh),
+          // ),
           IconButton(
             onPressed: () {
               Navigator.of(context).push(
@@ -284,6 +297,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
       body: Column(
         children: [
+          // --- TOGGLE BAR ---
+          Container(
+            color: Colors.grey[100],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  onPressed: () => setState(() => _isGridView = false),
+                  icon: Icon(
+                    Icons.view_list,
+                    color: !_isGridView ? Colors.green : Colors.grey,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => setState(() => _isGridView = true),
+                  icon: Icon(
+                    Icons.grid_view,
+                    color: _isGridView ? Colors.green : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder<List<CapturedImage>>(
               stream: widget.db.select(widget.db.capturedImages).watch(),
@@ -332,56 +369,100 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         ),
 
                         // --- IMAGES FOR THIS DATE ---
-                        ...imagesForDay.map((item) {
-                          return ListTile(
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child:
-                                  item.imagePath.startsWith("http")
-                                      ? CachedNetworkImage(
-                                        imageUrl: item.imagePath,
-                                        width: 50,
-                                        height: 50,
-                                        fit: BoxFit.fill,
-                                        placeholder:
-                                            (context, url) => SizedBox(
-                                              child: Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: Colors.green,
-                                                    ),
+                        _isGridView
+                            ? GridView.builder(
+                              shrinkWrap: true,
+                              physics:
+                                  const NeverScrollableScrollPhysics(), // outer ListView handles scroll
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    crossAxisSpacing: 4,
+                                    mainAxisSpacing: 4,
+                                  ),
+                              itemCount: imagesForDay.length,
+                              itemBuilder: (context, i) {
+                                final item = imagesForDay[i];
+                                return GestureDetector(
+                                  onTap: () => viewActions(context, item),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      // your existing image widget (local or network)
+                                      _buildImageThumbnail(item),
+                                      // optional: time label overlay at bottom
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Container(
+                                          color: Colors.black45,
+                                          padding: const EdgeInsets.all(2),
+                                          child: Text(
+                                            DateFormat.jm().format(
+                                              item.deviceTimestamp,
+                                            ),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            )
+                            : Column(
+                              children:
+                                  imagesForDay
+                                      .map(
+                                        (item) => Card(
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 4,
+                                          ),
+                                          child: ListTile(
+                                            leading: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: _buildImageThumbnail(
+                                                item,
+                                                size: 64,
                                               ),
                                             ),
-                                        errorWidget:
-                                            (context, url, error) => Icon(
-                                              Icons.broken_image,
-                                              size: 40,
-                                              color: Colors.grey,
+                                            title: Text(
+                                              DateFormat.jm().format(
+                                                item.deviceTimestamp,
+                                              ),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
-                                        httpHeaders: const {},
+                                            subtitle: Text(
+                                              item.place ?? '',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            trailing: Icon(
+                                              item.isSynced
+                                                  ? Icons.cloud_done
+                                                  : Icons.cloud_upload_outlined,
+                                              color:
+                                                  item.isSynced
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                            ),
+                                            onTap:
+                                                () =>
+                                                    viewActions(context, item),
+                                          ),
+                                        ),
                                       )
-                                      : _LocalImageWidget(path: item.imagePath),
+                                      .toList(),
                             ),
-                            title: Text(
-                              "Time: ${DateFormat.jm().format(item.deviceTimestamp)}",
-                            ), // e.g. 1:45 PM
-                            trailing: Text(
-                              "${item.employeeId}",
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            onTap: () {
-                              viewActions(context, item);
-                              // Navigator.of(context).push(
-                              //   MaterialPageRoute(
-                              //     builder:
-                              //         (_) => FullImageViewer(
-                              //           imagePath: File(item.imagePath),
-                              //         ),
-                              //   ),
-                              // );
-                            },
-                          );
-                        }).toList(),
                       ],
                     );
                   },
@@ -502,10 +583,33 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 }
 
+Widget _buildImageThumbnail(CapturedImage item, {double size = 50}) {
+  print(item.imagePath);
+  return item.imagePath.startsWith("http")
+      ? CachedNetworkImage(
+        imageUrl: item.imagePath,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        placeholder:
+            (context, url) => SizedBox(
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.green),
+              ),
+            ),
+        errorWidget:
+            (context, url, error) =>
+                Icon(Icons.broken_image, size: 40, color: Colors.grey),
+        httpHeaders: const {},
+      )
+      : _LocalImageWidget(path: item.imagePath, size: size);
+}
+
 /// Safely loads a local file image, showing a fallback if file doesn't exist.
 class _LocalImageWidget extends StatefulWidget {
   final String path;
-  const _LocalImageWidget({required this.path});
+  final double size;
+  const _LocalImageWidget({required this.path, required this.size});
 
   @override
   State<_LocalImageWidget> createState() => _LocalImageWidgetState();
@@ -528,8 +632,8 @@ class _LocalImageWidgetState extends State<_LocalImageWidget> {
         if (snapshot.data == true) {
           return Image.file(
             File(widget.path),
-            width: 50,
-            height: 50,
+            width: widget.size,
+            height: widget.size,
             fit: BoxFit.cover,
             // Catch any remaining decode errors
             errorBuilder:

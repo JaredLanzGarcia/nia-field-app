@@ -53,6 +53,7 @@ dependencies:
   ntp: ^2.0.0
   path: ^1.9.1
   path_provider: ^2.1.5
+  quickalert: ^1.1.0
   shared_preferences: ^2.5.3
   video_player: ^2.10.1
   workmanager: ^0.7.0

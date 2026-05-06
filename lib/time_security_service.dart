@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kronos/flutter_kronos.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/time_persistence_service.dart';
@@ -108,19 +111,47 @@ class TimeSecurityService {
     return false;
   }
 
-  // On app launch, before anything else
   static Future<bool> hasDeviceRebooted() async {
-    final prefs = await SharedPreferences.getInstance();
-    final currentUptimeSeconds = await getUptimeSeconds();
-    final lastUptimeSeconds = prefs.getInt('last_uptime_seconds') ?? 0;
+    if (Platform.isAndroid) {
+      return _checkRebootByBootId();
+    } else {
+      return _checkRebootByTimestamp();
+    }
+  }
 
-    // Uptime is less than last saved → reboot occurred
-    if (currentUptimeSeconds < lastUptimeSeconds) {
+  static Future<bool> _checkRebootByBootId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final bootIdFile = File('/proc/sys/kernel/random/boot_id');
+    final currentBootId = (await bootIdFile.readAsString()).trim();
+
+    final savedBootId = prefs.getString('last_boot_id');
+
+    if (savedBootId == null) {
+      await prefs.setString('last_boot_id', currentBootId);
+      return false;
+    }
+
+    if (currentBootId != savedBootId) {
+      await prefs.setString('last_boot_id', currentBootId);
       return true;
     }
 
-    await prefs.setInt('last_uptime_seconds', currentUptimeSeconds);
     return false;
+  }
+
+  static Future<bool> _checkRebootByTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final uptimeSeconds = await getUptimeSeconds();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final bootTimeMs = now - (uptimeSeconds * 1000);
+
+    final lastSavedMs = prefs.getInt('last_seen_timestamp') ?? 0;
+
+    await prefs.setInt('last_seen_timestamp', now);
+
+    return lastSavedMs > 0 && bootTimeMs > lastSavedMs;
   }
 
   /// Saves the current wall time + native uptime as a new anchor.
@@ -149,10 +180,6 @@ class TimeSecurityService {
     // 2. Check if current time is before last saved time (Anti-Backward-Jump)
     DateTime now = DateTime.now();
     DateTime last = await TimePersistenceService.getLastRecordedTime();
-    // print(!isDrifting);
-    // print("IS AFTER ${now.isAfter(last)}");
-    // print("LAST ${last}");
-    // print("NOW ${now}");
 
     if (!isDrifting && now.isAfter(last)) {
       // ONLY save if both hardware and history validate the current time

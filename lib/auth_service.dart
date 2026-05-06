@@ -36,6 +36,8 @@ class AuthService {
             CapturedImagesCompanion.insert(
               // Note: You'll need to download the image or store the URL
               imagePath: item['image_path'],
+              // imagePath:
+              //     "REMOVED/static/files/locator-image/${item['image_path']}",
               deviceTimestamp: DateTime.parse(item['timestamp']),
               lastActivity: DateTime.parse(item['last_activity']),
               timeOffset: parseDartDuration(item['time_offset']),
@@ -49,8 +51,6 @@ class AuthService {
     }
 
     _authController.add(true); // Notify StreamBuilder
-
-    
   }
 
   // Inside your AuthService class

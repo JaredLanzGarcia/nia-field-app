@@ -7,6 +7,7 @@ import 'package:nia_project/database.dart';
 import 'package:nia_project/screens/main_screen.dart';
 import 'package:nia_project/time_security_service.dart';
 import 'package:nia_project/url_of_db.dart';
+import 'package:quickalert/quickalert.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({
@@ -35,6 +36,14 @@ class _LoginScreenState extends State<LoginScreen> {
       errorMessage = null;
     });
 
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.loading,
+      title: 'Please wait',
+      text: 'Logging in...',
+      barrierDismissible: false,
+    );
+
     final result = await callLoginApi(
       _empIdController.text,
       _passwordController.text,
@@ -49,43 +58,67 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (mounted) {
+        Navigator.of(context).pop();
 
-        final int empId = int.parse(data['employee_id']);
-        await widget.db.delete(widget.db.users).go();
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          print(data['employee_id']);
+          print((data['employee_id']).runtimeType);
+          final int empId = data['employee_id'];
+          await widget.db.delete(widget.db.users).go();
 
-        await widget.db
-            .into(widget.db.users)
-            .insert(
-              UsersCompanion.insert(
-                employeeId: empId.toString(),
-                password: _passwordController.text,
-              ),
+          await widget.db
+              .into(widget.db.users)
+              .insert(
+                UsersCompanion.insert(
+                  employeeId: empId.toString(),
+                  password: _passwordController.text,
+                ),
+              );
+          widget.onLoginSuccess(result['access_token'], result['history']);
+
+          final serverTime = DateTime.parse(result['server_time']);
+          final deviceTime = DateTime.now();
+          final diff = deviceTime.difference(serverTime.toLocal()).abs();
+          print(serverTime);
+          print(serverTime.toLocal());
+
+          if (diff.inMinutes > 5) {
+            print(
+              "🚨 Clock tampered at login — server says $serverTime, device says $deviceTime",
             );
-        widget.onLoginSuccess(result['access_token'], result['history']);
+            await widget.authService.logout(widget.db);
+            return;
+          }
 
-        final serverTime = DateTime.parse(result['server_time']);
-        final deviceTime = DateTime.now();
-        final diff = deviceTime.difference(serverTime.toLocal()).abs();
-        print(serverTime);
-        print(serverTime.toLocal());
-
-        if (diff.inMinutes > 5) {
-          print(
-            "🚨 Clock tampered at login — server says $serverTime, device says $deviceTime",
+          // Only reaches here if time is clean
+          await TimeSecurityService.saveLoginAnchor(
+            db: widget.db,
+            serverTime: serverTime.toLocal(),
           );
-          await widget.authService.logout(widget.db);
-          return;
-        }
 
-        // Only reaches here if time is clean
-        await TimeSecurityService.saveLoginAnchor(
-          db: widget.db,
-          serverTime: serverTime.toLocal(),
-        );
+          if (mounted) {
+            QuickAlert.show(
+              context: context,
+              type: QuickAlertType.success,
+              title: 'Success!',
+              text: 'Login successful!',
+            );
+          }
+        } else {
+          if (mounted) {
+            Navigator.of(context).pop();
+            QuickAlert.show(
+              context: context,
+              type: QuickAlertType.error,
+              title: 'Error',
+              text: 'User data not found.',
+            );
+          }
+        }
       }
-    }
+    } else {}
   }
 
   Future<Map<String, dynamic>?> callLoginApi(
@@ -113,6 +146,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return data;
       } else {
         print("Login failed: ${response.body}");
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          QuickAlert.show(
+            context: context,
+            type: QuickAlertType.error,
+            title: 'Error',
+            text: '${response.body}',
+          );
+        }
         return null;
       }
     } catch (e) {

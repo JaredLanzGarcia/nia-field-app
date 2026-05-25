@@ -43,7 +43,7 @@ android {
     applicationVariants.all {
         outputs.all {
             this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputFileName = "nia-field-app-${versionName}.apk"
+            outputFileName = "pulse-app.apk"
         }
     }
 }

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
-import 'package:nia_project/screens/main_screen.dart';
 import 'package:nia_project/url_of_db.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -74,7 +73,7 @@ class RegisterScreen extends StatelessWidget {
                   children: [
                     Center(
                       child: Image.asset(
-                        "assets/images/nia-logo.png",
+                        "assets/images/pulse-logo-green.png",
                         width: 250,
                       ),
                     ),

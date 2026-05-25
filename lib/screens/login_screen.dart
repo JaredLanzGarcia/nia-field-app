@@ -4,10 +4,10 @@ import 'package:gap/gap.dart';
 import 'package:http/http.dart' as http;
 import 'package:nia_project/auth_service.dart';
 import 'package:nia_project/database.dart';
-import 'package:nia_project/screens/main_screen.dart';
 import 'package:nia_project/time_security_service.dart';
 import 'package:nia_project/url_of_db.dart';
 import 'package:quickalert/quickalert.dart';
+import 'package:nia_project/screens/terms_and_privacy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({
@@ -188,8 +188,49 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Center(
                         child: Image.asset(
-                          "assets/images/nia-logo.png",
-                          width: 250,
+                          "assets/images/pulse-logo-only-white-stroke.png",
+                          width: 150,
+                        ),
+                      ),
+                      Center(
+                        child: Stack(
+                          children: [
+                            // White stroke layer — outside ShaderMask so it's not recolored
+                            Text(
+                              "PULSE",
+                              style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 4,
+                                foreground:
+                                    Paint()
+                                      ..style = PaintingStyle.stroke
+                                      ..strokeWidth = 3.5
+                                      ..color = Colors.white,
+                              ),
+                            ),
+                            // Gradient fill layer
+                            ShaderMask(
+                              shaderCallback:
+                                  (bounds) => LinearGradient(
+                                    colors: [
+                                      Color(0xFF4CAF50),
+                                      Color(0xFF1B5E20),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ).createShader(bounds),
+                              child: Text(
+                                "PULSE",
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 4,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -207,6 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                      Gap(12),
 
                       TextFormField(
                         controller: _empIdController,
@@ -237,22 +279,63 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Gap(20),
                       Center(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: Size(double.infinity, 50),
-                            overlayColor: Colors.green,
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF1B8A3E), // deep green
+                                Color(0xFF4CAF50), // mid green
+                                Color(0xFF8BC34A), // light green
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 50),
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                doLogin();
+                              }
+                            },
+                            child: Text(
+                              "Login",
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
+                        ),
+                      ),
+                      Gap(20),
+                      Center(
+                        child: TextButton(
                           onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              doLogin();
-                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const TermsAndPrivacyScreen(),
+                              ),
+                            );
                           },
-                          child: Text("Login", style: TextStyle(fontSize: 16)),
+                          child: Text(
+                            "Terms of Use & Privacy Notice",
+                            style: TextStyle(
+                              color: Colors.white,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ],

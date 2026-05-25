@@ -13,7 +13,7 @@ import 'package:mime/mime.dart';
 import 'package:nia_project/database.dart';
 import 'package:nia_project/heartbeat_service.dart';
 import 'package:nia_project/screens/(unused)camera_screen.dart';
-import 'package:nia_project/screens/main_screen.dart';
+import 'package:nia_project/screens/navigation_screen.dart';
 import 'package:nia_project/screens/map_screen.dart';
 import 'package:nia_project/screens/register_screen.dart';
 import 'package:nia_project/screens/splash_screen.dart';
@@ -97,7 +97,7 @@ Future<void> syncDataToRemote(AppDatabase database) async {
       final responseBody = await response.stream.bytesToString(); // ← add this
       print(
         "Sync response ${response.statusCode}: $responseBody",
-      ); // ← add this
+      );//
 
       if (response.statusCode == 200) {
         final responseJson = jsonDecode(responseBody);
@@ -168,7 +168,7 @@ class MyApp extends StatelessWidget {
             return SplashScreen();
           }
           if (snapshot.data == true) {
-            return MainScreen(authService: authService, db: db);
+            return PulseNavigationScreen(authService: authService, db: db);
           }
           return LoginScreen(
             onLoginSuccess: (token, history) {
